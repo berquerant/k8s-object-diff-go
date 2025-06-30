@@ -1,0 +1,64 @@
+# diff
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.14.3
+          ports:
+            - containerPort: 80
+---
+# empty
+---
+# nodiff
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  namespace: default
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.14.2
+      ports:
+        - containerPort: 80
+---
+# left only
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-left
+  namespace: default
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.14.2
+      ports:
+        - containerPort: 80
+---
+# empty
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-common
+  namespace: default
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.14.2
+      ports:
+        - containerPort: 80

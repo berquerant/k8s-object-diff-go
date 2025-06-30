@@ -1,0 +1,15 @@
+--- tests/right-only/left.yml v1>Pod>default>nginx
++++ tests/right-only/right.yml v1>Pod>default>nginx
+@@ -1 +1,12 @@
++apiVersion: v1
++kind: Pod
++metadata:
++  name: nginx
++  namespace: default
++spec:
++  containers:
++  - name: nginx
++    image: nginx:1.14.2
++    ports:
++    - containerPort: 80
+ 

@@ -1,0 +1,81 @@
+# k8s-object-diff-go
+
+```
+❯ objdiff --help
+objdiff - k8s object diff by object id
+
+# Usage
+
+  objdiff [flags] LEFT_FILE RIGHT_FILE
+
+# Object ID
+
+A unique ID for a k8s object.
+e.g.
+
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: nginx
+    namespace: default
+
+then id is 'v1>Pod>default>nginx'.
+
+# Output format
+## id
+
+All object IDs.
+
+## text
+
+Unified diff.
+
+## yaml
+
+Array of
+
+  id: "Object ID"
+  diff: "Unified diff"
+  left: "Left object (optional)"
+  right: "Right object (optional)"
+
+# Exit status
+
+0 if inputs are the same.
+1 if inputs differ.
+Otherwise 2.
+
+# Flags
+  -c, --color              colored diff
+  -C, --context int        diff context (default 3)
+      --debug              enable debug log
+  -n, --indent int         yaml indent (default 2)
+  -o, --out string         output format: text,yaml,id (default "text")
+  -d, --separator string   object id separator (default ">")
+      --success            exit with 0 when inputs differ
+      --version            print objdiff version
+```
+
+## Example
+
+For [left.yml](./tests/diffs/left.yml) and [right.yml](./tests/diffs/right.yml), executing
+
+``` shell
+objdiff left.yml right.yml
+```
+
+yields the [result](./tests/diffs/out.txt).
+
+## Installation
+
+Build binary:
+
+``` shell
+make
+```
+
+Show help:
+
+``` shell
+./dist/objdiff --help
+```

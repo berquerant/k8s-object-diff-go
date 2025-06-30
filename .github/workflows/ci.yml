@@ -1,0 +1,44 @@
+name: CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version:
+          - "1.24.4"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5.5.0
+        id: setup-go
+        with:
+          go-version: ${{ matrix.go-version }}
+          check-latest: true
+          cache-dependency-path: go.sum
+      - name: Download go modules
+        if: ${{ steps.setup-go.outputs.cache-hit != 'true' }}
+        run: go mod download
+      - name: Display Go version
+        run: go version
+      - name: Test
+        run: make test
+      - name: Lint
+        run: make vet
+      - name: Vuln
+        run: make vuln
+      - name: Build
+        run: make

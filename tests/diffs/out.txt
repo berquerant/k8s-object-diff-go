@@ -1,0 +1,59 @@
+--- tests/diffs/left.yml apps/v1>Deployment>>nginx-deployment
++++ tests/diffs/right.yml apps/v1>Deployment>>nginx-deployment
+@@ -5,7 +5,7 @@
+   labels:
+     app: nginx
+ spec:
+-  replicas: 1
++  replicas: 3
+   selector:
+     matchLabels:
+       app: nginx
+@@ -16,7 +16,7 @@
+     spec:
+       containers:
+       - name: nginx
+-        image: nginx:1.14.3
++        image: nginx:1.14.2
+         ports:
+         - containerPort: 80
+ 
+--- tests/diffs/left.yml v1>Pod>default>nginx-common
++++ tests/diffs/right.yml v1>Pod>default>nginx-common
+@@ -8,5 +8,5 @@
+   - name: nginx
+     image: nginx:1.14.2
+     ports:
+-    - containerPort: 80
++    - containerPort: 81
+ 
+--- tests/diffs/left.yml v1>Pod>default>nginx-left
++++ tests/diffs/right.yml v1>Pod>default>nginx-left
+@@ -1,12 +1 @@
+-apiVersion: v1
+-kind: Pod
+-metadata:
+-  name: nginx-left
+-  namespace: default
+-spec:
+-  containers:
+-  - name: nginx
+-    image: nginx:1.14.2
+-    ports:
+-    - containerPort: 80
+ 
+--- tests/diffs/left.yml v1>Pod>default>nginx-right
++++ tests/diffs/right.yml v1>Pod>default>nginx-right
+@@ -1 +1,12 @@
++apiVersion: v1
++kind: Pod
++metadata:
++  name: nginx-right
++  namespace: default
++spec:
++  containers:
++  - name: nginx
++    image: nginx:1.14.2
++    ports:
++    - containerPort: 80
+ 

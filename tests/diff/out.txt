@@ -1,0 +1,20 @@
+--- tests/diff/left.yml apps/v1>Deployment>>nginx-deployment
++++ tests/diff/right.yml apps/v1>Deployment>>nginx-deployment
+@@ -5,7 +5,7 @@
+   labels:
+     app: nginx
+ spec:
+-  replicas: 3
++  replicas: 1
+   selector:
+     matchLabels:
+       app: nginx
+@@ -16,7 +16,7 @@
+     spec:
+       containers:
+       - name: nginx
+-        image: nginx:1.14.2
++        image: nginx:1.14.3
+         ports:
+         - containerPort: 80
+ 
