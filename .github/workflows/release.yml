@@ -37,8 +37,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           version: '~> v2'
-          args: build
-          # args: release --clean
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION_PACKAGE: "github.com/berquerant/k8s-object-diff-go/version"
