@@ -25,7 +25,7 @@ builds:
       - -v
       - -trimpath
     ldflags:
-      - -s -w -X {{.Env.VERSION_PACKAGE}}.Version={{.Env.VERSION}} -X {{.Env.VERSION_PACKAGE}}.Revision={{.Env.REVISION}}
+      - -s -w -X {{ .Env.VERSION_PACKAGE }}.Version={{ .Env.VERSION }} -X {{ .Env.VERSION_PACKAGE }}.Revision={{ .Env.REVISION }}
 
 archives:
   - formats: binary
