@@ -18,6 +18,9 @@ test:
 init:
 	$(GOMOD) tidy -v
 
+.PHONY: lint
+lint: vet vuln
+
 .PHONY: vuln
 vuln:
 	go tool govulncheck ./...
