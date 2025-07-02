@@ -87,18 +87,14 @@ func (y *YamlUnmarshaler[T]) Unmarshal(ctx context.Context) ([]T, error) {
 	result := []T{}
 	for i, d := range fileNode.Docs {
 		if d.Body == nil {
-			slog.Debug("skip load document due to empty", slog.Int("index", i))
+			slog.Info("skip to load document due to empty", slog.Int("index", i))
 			continue
 		}
 		t := new(T)
 		decoder := yaml.NewDecoder(strings.NewReader(d.String()), decoderOpts...)
 		err := decoder.DecodeFromNode(d.Body, t)
 		if err != nil {
-			slog.Debug(
-				"failed to load document",
-				slog.Int("index", i),
-				slog.Any("err", err),
-			)
+			slog.Info("failed to load document", slog.Int("index", i), slog.Any("err", err))
 			continue
 		}
 		result = append(result, *t)
