@@ -27,11 +27,11 @@ func runObjDiff(ctx context.Context, c *Config, left, right string) error {
 	marshaler := internal.NewYamlMarshaler(c.Indent, true)
 	leftMap, err := loadObjects(ctx, marshaler, left, c.Separator, c.AllowDuplicateKey)
 	if err != nil {
-		return fmt.Errorf("%w: left file: %s", err, left)
+		return fmt.Errorf("left file: %s: %w", left, err)
 	}
 	rightMap, err := loadObjects(ctx, marshaler, right, c.Separator, c.AllowDuplicateKey)
 	if err != nil {
-		return fmt.Errorf("%w: right file: %s", err, right)
+		return fmt.Errorf("right file: %s: %w", right, err)
 	}
 
 	pairMap := internal.NewObjectPairMap(leftMap, rightMap)
@@ -52,14 +52,15 @@ func loadObjects(ctx context.Context, marshaler internal.Marshaler, file, sep st
 	slog.Debug("loadObjects", slog.String("file", file))
 	f, err := os.Open(file)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open %s: %w", file, err)
 	}
 	defer f.Close()
 
 	objects, err := internal.LoadObjects(ctx, f, marshaler, allowDuplicateMapKey)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load objects from %s: %w", file, err)
 	}
+	slog.Debug("loaded objects", slog.Int("len", len(objects)))
 
 	objectMap := internal.NewObjectMap(sep)
 	for _, x := range objects {

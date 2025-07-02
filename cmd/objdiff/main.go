@@ -139,6 +139,7 @@ func main() {
 			}
 			os.Exit(exitCodeDiffFound)
 		}
+		slog.Error("exit", slog.Any("err", err))
 		os.Exit(exitCodeFailure)
 	}
 }

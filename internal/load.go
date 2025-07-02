@@ -13,14 +13,14 @@ func LoadObjects(ctx context.Context, r io.Reader, marshaler Marshaler, allowDup
 	m := NewYamlUnmarshaler(r, map[string]any{}, allowDuplicteMapKey)
 	xs, err := m.Unmarshal(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load objects: %w", err)
 	}
 
 	result := make([]*Object, len(xs))
 	for i, x := range xs {
 		v, err := LoadObjectFromMap(ctx, marshaler, x)
 		if err != nil {
-			return nil, fmt.Errorf("%w: index %d", err, i)
+			return nil, fmt.Errorf("load obejcts: index %d: %w", i, err)
 		}
 		result[i] = v
 	}
@@ -34,11 +34,11 @@ func LoadObjectFromMap(ctx context.Context, marshaler Marshaler, obj map[string]
 	getString := func(key string) (string, error) {
 		x, ok := obj[key]
 		if !ok {
-			return "", fmt.Errorf("%w: %s is missing", ErrLoadObject, key)
+			return "", fmt.Errorf("%s is missing: %w", key, ErrLoadObject)
 		}
 		v, ok := x.(string)
 		if !ok {
-			return "", fmt.Errorf("%w: %s is not a string", ErrLoadObject, key)
+			return "", fmt.Errorf("%s is not a string: %w", key, ErrLoadObject)
 		}
 		return v, nil
 	}
@@ -61,7 +61,7 @@ func LoadObjectFromMap(ctx context.Context, marshaler Marshaler, obj map[string]
 
 	meta, ok := obj["metadata"]
 	if !ok {
-		return nil, fmt.Errorf("%w: metadata is missing", ErrLoadObject)
+		return nil, fmt.Errorf("metadata is missing: %w", ErrLoadObject)
 	}
 
 	var (
@@ -75,7 +75,7 @@ func LoadObjectFromMap(ctx context.Context, marshaler Marshaler, obj map[string]
 		metav2 = metaMapSlice.ToMap()
 	}
 	if len(metav) == 0 && len(metav2) == 0 {
-		return nil, fmt.Errorf("%w: metadata is invalid: %#v", ErrLoadObject, meta)
+		return nil, fmt.Errorf("metadata is invalid: %#v: %w", meta, ErrLoadObject)
 	}
 
 	getString2 := func(key string) (string, error) {
@@ -87,11 +87,11 @@ func LoadObjectFromMap(ctx context.Context, marshaler Marshaler, obj map[string]
 			x, ok = metav2[key]
 		}
 		if !ok {
-			return "", fmt.Errorf("%w: %s is missing", ErrLoadObject, key)
+			return "", fmt.Errorf("%s is missing: %w", key, ErrLoadObject)
 		}
 		v, ok := x.(string)
 		if !ok {
-			return "", fmt.Errorf("%w: %s is not a string", ErrLoadObject, key)
+			return "", fmt.Errorf("%s is not a string: %w", key, ErrLoadObject)
 		}
 		return v, nil
 	}
@@ -112,7 +112,7 @@ func LoadObjectFromMap(ctx context.Context, marshaler Marshaler, obj map[string]
 
 	b, err := marshaler.Marshal(ctx, obj)
 	if err != nil {
-		return nil, errors.Join(ErrLoadObject, fmt.Errorf("%w: failed to marshal", err))
+		return nil, fmt.Errorf("failed to marshal: %w", errors.Join(err, ErrLoadObject))
 	}
 
 	return &Object{

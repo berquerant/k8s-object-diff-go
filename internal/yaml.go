@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"strings"
@@ -36,12 +37,16 @@ func NewYamlMarshaler(indent int, literalStyleIfMultiline bool) *YamlMarshaler {
 }
 
 func (y *YamlMarshaler) Marshal(ctx context.Context, v any) ([]byte, error) {
-	return yaml.MarshalContext(
+	b, err := yaml.MarshalContext(
 		ctx,
 		v,
 		yaml.Indent(y.indent),
 		yaml.UseLiteralStyleIfMultiline(y.literalStyleIfMultiline),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("marshal: %w", err)
+	}
+	return b, nil
 }
 
 type YamlUnmarshaler[T any] struct {
@@ -61,7 +66,7 @@ func NewYamlUnmarshaler[T any](r io.Reader, t T, allowDuplicateMapKey bool) *Yam
 func (y *YamlUnmarshaler[T]) Unmarshal(ctx context.Context) ([]T, error) {
 	b, err := io.ReadAll(y.r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal read: %w", err)
 	}
 
 	var opts []parser.Option
@@ -70,7 +75,7 @@ func (y *YamlUnmarshaler[T]) Unmarshal(ctx context.Context) ([]T, error) {
 	}
 	fileNode, err := parser.ParseBytes(b, parser.ParseComments, opts...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal parse: %w", err)
 	}
 
 	decoderOpts := []yaml.DecodeOption{
