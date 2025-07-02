@@ -52,6 +52,7 @@ Otherwise 2.
       --debug               enable debug log
   -n, --indent int          yaml indent (default 2)
   -o, --out string          output format: text,yaml,id (default "text")
+  -q, --quiet               quiet log
   -d, --separator string    object id separator (default ">")
       --success             exit with 0 even if inputs differ
       --version             print objdiff version

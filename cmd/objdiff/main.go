@@ -63,6 +63,7 @@ type Config struct {
 	Indent            int    `name:"indent" short:"n" default:"2" usage:"yaml indent"`
 	Out               string `name:"out" short:"o" default:"text" usage:"output format: text,yaml,id"`
 	Debug             bool   `name:"debug" usage:"enable debug log"`
+	Quiet             bool   `name:"quiet" short:"q" usage:"quiet log"`
 	Color             bool   `name:"color" short:"c" usage:"colored diff"`
 	DiffSuccess       bool   `name:"success" usage:"exit with 0 even if inputs differ"`
 	AllowDuplicateKey bool   `name:"allowDuplicateKey" default:"true" usage:"allow the use of keys with the same name in the same map"`
@@ -116,7 +117,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	setupLogger(os.Stderr, c.Debug)
+	setupLogger(os.Stderr, c.Debug, c.Quiet)
 
 	if v, _ := fs.GetBool("version"); v {
 		version.Write(os.Stdout)
@@ -144,10 +145,13 @@ func main() {
 	}
 }
 
-func setupLogger(w io.Writer, debug bool) {
+func setupLogger(w io.Writer, debug, quiet bool) {
 	level := slog.LevelInfo
 	if debug {
 		level = slog.LevelDebug
+	}
+	if quiet {
+		level = slog.LevelError
 	}
 	handler := slog.NewTextHandler(w, &slog.HandlerOptions{
 		Level: level,
