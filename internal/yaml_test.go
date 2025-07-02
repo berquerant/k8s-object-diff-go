@@ -15,6 +15,30 @@ func TestYamlUnmarshaler(t *testing.T) {
 		S string `yaml:"s"`
 	}
 
+	t.Run("allowDuplicateMapKey", func(t *testing.T) {
+		const text = `---
+i: 1
+i: 1
+s: "str"`
+		t.Run("true", func(t *testing.T) {
+			got, err := internal.NewYamlUnmarshaler(strings.NewReader(text), Want{}, true).Unmarshal(context.TODO())
+			if !assert.Nil(t, err) {
+				return
+			}
+			if !assert.Len(t, got, 1) {
+				return
+			}
+			assert.Equal(t, Want{
+				I: 1,
+				S: "str",
+			}, got[0])
+		})
+		t.Run("false", func(t *testing.T) {
+			_, err := internal.NewYamlUnmarshaler(strings.NewReader(text), Want{}, false).Unmarshal(context.TODO())
+			assert.NotNil(t, err)
+		})
+	})
+
 	for _, tc := range []struct {
 		title string
 		text  string
@@ -105,6 +129,7 @@ s: "str2"`,
 			got, err := internal.NewYamlUnmarshaler(
 				strings.NewReader(tc.text),
 				Want{},
+				true,
 			).Unmarshal(context.TODO())
 			if !assert.Nil(t, err) {
 				return

@@ -29,7 +29,7 @@ spec:
     - containerPort: 80
 `
 		r := strings.NewReader(manifest)
-		got, err := internal.LoadObjects(context.TODO(), r, internal.NewYamlMarshaler(2, true))
+		got, err := internal.LoadObjects(context.TODO(), r, internal.NewYamlMarshaler(2, true), true)
 		if !assert.Nil(t, err) {
 			return
 		}

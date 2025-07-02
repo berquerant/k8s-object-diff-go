@@ -25,11 +25,11 @@ func run(c *Config, left, right string) error {
 
 func runObjDiff(ctx context.Context, c *Config, left, right string) error {
 	marshaler := internal.NewYamlMarshaler(c.Indent, true)
-	leftMap, err := loadObjects(ctx, marshaler, left, c.Separator)
+	leftMap, err := loadObjects(ctx, marshaler, left, c.Separator, c.AllowDuplicateKey)
 	if err != nil {
 		return fmt.Errorf("%w: left file: %s", err, left)
 	}
-	rightMap, err := loadObjects(ctx, marshaler, right, c.Separator)
+	rightMap, err := loadObjects(ctx, marshaler, right, c.Separator, c.AllowDuplicateKey)
 	if err != nil {
 		return fmt.Errorf("%w: right file: %s", err, right)
 	}
@@ -48,7 +48,7 @@ func runObjDiff(ctx context.Context, c *Config, left, right string) error {
 	return printer.print(ctx)
 }
 
-func loadObjects(ctx context.Context, marshaler internal.Marshaler, file, sep string) (*internal.ObjectMap, error) {
+func loadObjects(ctx context.Context, marshaler internal.Marshaler, file, sep string, allowDuplicateMapKey bool) (*internal.ObjectMap, error) {
 	slog.Debug("loadObjects", slog.String("file", file))
 	f, err := os.Open(file)
 	if err != nil {
@@ -56,7 +56,7 @@ func loadObjects(ctx context.Context, marshaler internal.Marshaler, file, sep st
 	}
 	defer f.Close()
 
-	objects, err := internal.LoadObjects(ctx, f, marshaler)
+	objects, err := internal.LoadObjects(ctx, f, marshaler, allowDuplicateMapKey)
 	if err != nil {
 		return nil, err
 	}

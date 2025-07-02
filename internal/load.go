@@ -9,8 +9,8 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-func LoadObjects(ctx context.Context, r io.Reader, marshaler Marshaler) ([]*Object, error) {
-	m := NewYamlUnmarshaler(r, map[string]any{})
+func LoadObjects(ctx context.Context, r io.Reader, marshaler Marshaler, allowDuplicteMapKey bool) ([]*Object, error) {
+	m := NewYamlUnmarshaler(r, map[string]any{}, allowDuplicteMapKey)
 	xs, err := m.Unmarshal(ctx)
 	if err != nil {
 		return nil, err

@@ -46,14 +46,15 @@ Array of
 Otherwise 2.
 
 # Flags
-  -c, --color              colored diff
-  -C, --context int        diff context (default 3)
-      --debug              enable debug log
-  -n, --indent int         yaml indent (default 2)
-  -o, --out string         output format: text,yaml,id (default "text")
-  -d, --separator string   object id separator (default ">")
-      --success            exit with 0 when inputs differ
-      --version            print objdiff version
+      --allowDuplicateKey   allow the use of keys with the same name in the same map (default true)
+  -c, --color               colored diff
+  -C, --context int         diff context (default 3)
+      --debug               enable debug log
+  -n, --indent int          yaml indent (default 2)
+  -o, --out string          output format: text,yaml,id (default "text")
+  -d, --separator string    object id separator (default ">")
+      --success             exit with 0 even if inputs differ
+      --version             print objdiff version
 ```
 
 ## Example

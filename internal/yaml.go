@@ -45,14 +45,16 @@ func (y *YamlMarshaler) Marshal(ctx context.Context, v any) ([]byte, error) {
 }
 
 type YamlUnmarshaler[T any] struct {
-	r io.Reader
-	t T
+	r                    io.Reader
+	t                    T
+	allowDuplicateMapKey bool
 }
 
-func NewYamlUnmarshaler[T any](r io.Reader, t T) *YamlUnmarshaler[T] {
+func NewYamlUnmarshaler[T any](r io.Reader, t T, allowDuplicateMapKey bool) *YamlUnmarshaler[T] {
 	return &YamlUnmarshaler[T]{
-		r: r,
-		t: t,
+		r:                    r,
+		t:                    t,
+		allowDuplicateMapKey: allowDuplicateMapKey,
 	}
 }
 
@@ -61,11 +63,22 @@ func (y *YamlUnmarshaler[T]) Unmarshal(ctx context.Context) ([]T, error) {
 	if err != nil {
 		return nil, err
 	}
-	fileNode, err := parser.ParseBytes(b, parser.ParseComments)
+
+	var opts []parser.Option
+	if y.allowDuplicateMapKey {
+		opts = append(opts, parser.AllowDuplicateMapKey())
+	}
+	fileNode, err := parser.ParseBytes(b, parser.ParseComments, opts...)
 	if err != nil {
 		return nil, err
 	}
 
+	decoderOpts := []yaml.DecodeOption{
+		yaml.UseOrderedMap(),
+	}
+	if y.allowDuplicateMapKey {
+		decoderOpts = append(decoderOpts, yaml.AllowDuplicateMapKey())
+	}
 	result := []T{}
 	for i, d := range fileNode.Docs {
 		if d.Body == nil {
@@ -73,7 +86,7 @@ func (y *YamlUnmarshaler[T]) Unmarshal(ctx context.Context) ([]T, error) {
 			continue
 		}
 		t := new(T)
-		decoder := yaml.NewDecoder(strings.NewReader(d.String()), yaml.UseOrderedMap())
+		decoder := yaml.NewDecoder(strings.NewReader(d.String()), decoderOpts...)
 		err := decoder.DecodeFromNode(d.Body, t)
 		if err != nil {
 			slog.Debug(
