@@ -60,7 +60,7 @@ func loadObjects(ctx context.Context, marshaler internal.Marshaler, file, sep st
 	if err != nil {
 		return nil, fmt.Errorf("failed to load objects from %s: %w", file, err)
 	}
-	slog.Debug("loaded objects", slog.Int("len", len(objects)))
+	slog.Debug("loaded objects", slog.String("file", file), slog.Int("len", len(objects)))
 
 	objectMap := internal.NewObjectMap(sep)
 	for _, x := range objects {
