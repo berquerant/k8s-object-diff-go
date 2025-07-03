@@ -5,6 +5,7 @@ go 1.24.4
 tool golang.org/x/vuln/cmd/govulncheck
 
 require (
+	al.essio.dev/pkg/shellescape v1.6.0
 	github.com/berquerant/structconfig v0.5.1
 	github.com/goccy/go-yaml v1.18.0
 	github.com/pmezard/go-difflib v1.0.0

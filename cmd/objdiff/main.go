@@ -6,7 +6,10 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"os/exec"
+	"strings"
 
+	"github.com/berquerant/k8s-object-diff-go/internal"
 	"github.com/berquerant/k8s-object-diff-go/version"
 	"github.com/berquerant/structconfig"
 	"github.com/spf13/pflag"
@@ -55,6 +58,16 @@ Array of
 1 if inputs differ.
 Otherwise 2.
 
+# Override differ
+
+  objdiff -x diff left.yml right.yml
+invokes
+  diff --unified=3 --color=never --label left.yml --label right.yml LEFT_FILE RIGHT_FILE
+
+  DIFFCMD='diff' objdiff -c -C 5 left.yml right.yml
+invokes
+  diff --unified=5 --color=always --label left.yml --label right.yml LEFT_FILE RIGHT_FILE
+
 # Flags`
 
 type Config struct {
@@ -67,6 +80,7 @@ type Config struct {
 	Color             bool   `name:"color" short:"c" usage:"colored diff"`
 	DiffSuccess       bool   `name:"success" usage:"exit with 0 even if inputs differ"`
 	AllowDuplicateKey bool   `name:"allowDuplicateKey" default:"true" usage:"allow the use of keys with the same name in the same map"`
+	DiffCommand       string `name:"diffCmd" short:"x" usage:"invoke this to get diff instead of builtin differ"`
 }
 
 type outMode string
@@ -89,6 +103,24 @@ func (c *Config) outMode() outMode {
 	default:
 		return outModeUnknown
 	}
+}
+
+var errNoDiffCommand = errors.New("NoDiffCommand")
+
+func (c *Config) diffCommand() ([]string, error) {
+	if len(c.DiffCommand) == 0 {
+		return nil, errNoDiffCommand
+	}
+	xs := strings.Split(internal.EscapeCommand(c.DiffCommand), " ")
+	if len(xs) == 0 {
+		panic("unreachable: diffCommand specified but no command")
+	}
+	head, err := exec.LookPath(xs[0])
+	if err != nil {
+		return nil, fmt.Errorf("lookup %s: %w", xs[0], err)
+	}
+	xs[0] = head
+	return xs, nil
 }
 
 const (

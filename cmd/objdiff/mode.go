@@ -23,7 +23,7 @@ func (p *diffPrinter) print(ctx context.Context) error {
 	case outModeYaml:
 		return p.printYamlDiff(ctx)
 	default:
-		return p.printTextDiff()
+		return p.printTextDiff(ctx)
 	}
 }
 
@@ -36,7 +36,7 @@ func (p *diffPrinter) printObjectIDList() error {
 	return nil
 }
 
-func (p *diffPrinter) printTextDiff() error {
+func (p *diffPrinter) printTextDiff(ctx context.Context) error {
 	var diffFound bool
 
 	for _, x := range p.pairs {
@@ -45,7 +45,10 @@ func (p *diffPrinter) printTextDiff() error {
 			slog.Error("missing object", slog.String("id", x.ID))
 			continue
 		}
-		d := p.differ.ObjectDiff(x)
+		d, err := p.differ.ObjectDiff(ctx, x)
+		if err != nil {
+			return err
+		}
 		if d.Diff == "" {
 			slog.Debug("no diff", slog.String("id", x.ID))
 			continue
@@ -74,7 +77,10 @@ func (p *diffPrinter) printYamlDiff(ctx context.Context) error {
 			slog.Error("missing object", slog.String("id", x.ID))
 			continue
 		}
-		d := p.differ.ObjectDiff(x)
+		d, err := p.differ.ObjectDiff(ctx, x)
+		if err != nil {
+			return err
+		}
 		if d.Diff == "" {
 			slog.Debug("no diff", slog.String("id", x.ID))
 			continue

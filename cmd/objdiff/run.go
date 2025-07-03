@@ -38,14 +38,35 @@ func runObjDiff(ctx context.Context, c *Config, left, right string) error {
 	pairs := pairMap.ObjectPairs()
 	slog.Debug("found pairs", slog.Int("len", len(pairs)))
 
+	differ, err := newObjectDiffer(c, left, right)
+	if err != nil {
+		return fmt.Errorf("differ: %w", err)
+	}
+
 	printer := &diffPrinter{
 		mode:      c.outMode(),
 		pairs:     pairs,
-		differ:    internal.NewObjectDiffBuilder(left, right, c.Context, c.Color),
+		differ:    differ,
 		marshaler: internal.NewYamlMarshaler(c.Indent, false),
 	}
 
 	return printer.print(ctx)
+}
+
+func newObjectDiffer(c *Config, left, right string) (internal.ObjectDiffer, error) {
+	cmd, err := c.diffCommand()
+	if err == nil {
+		return internal.NewProcessObjectDiffBuilder(
+			cmd[0], cmd[1:],
+			left, right,
+			c.Context,
+			c.Color,
+		), nil
+	}
+	if errors.Is(err, errNoDiffCommand) {
+		return internal.NewObjectDiffBuilder(left, right, c.Context, c.Color), nil
+	}
+	return nil, err
 }
 
 func loadObjects(ctx context.Context, marshaler internal.Marshaler, file, sep string, allowDuplicateMapKey bool) (*internal.ObjectMap, error) {
