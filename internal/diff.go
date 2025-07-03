@@ -194,6 +194,7 @@ func (d *ObjectDiffBuilder) ObjectDiff(_ context.Context, pair *ObjectPair) (*Ob
 	if err != nil {
 		return nil, fmt.Errorf("failed to get diff: id=%s: %w", pair.ID, err)
 	}
+
 	if d.color {
 		diffs := strings.Split(diff, "\n")
 		for i, x := range diffs {
@@ -208,6 +209,10 @@ func (d *ObjectDiffBuilder) ObjectDiff(_ context.Context, pair *ObjectPair) (*Ob
 			}
 		}
 		diff = strings.Join(diffs, "\n")
+	}
+	// remove trailing space newline
+	if len(diff) > 2 && diff[len(diff)-2] == ' ' && diff[len(diff)-1] == '\n' {
+		diff = diff[:len(diff)-2]
 	}
 
 	return &ObjectDiff{
