@@ -17,4 +17,3 @@
 +              image: nginx:1.14.3
                ports:
                - containerPort: 80
- 

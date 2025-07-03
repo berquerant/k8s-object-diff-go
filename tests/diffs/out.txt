@@ -17,7 +17,6 @@
 +        image: nginx:1.14.2
          ports:
          - containerPort: 80
- 
 --- tests/diffs/left.yml v1>Pod>default>nginx-common
 +++ tests/diffs/right.yml v1>Pod>default>nginx-common
 @@ -8,5 +8,5 @@
@@ -26,7 +25,6 @@
      ports:
 -    - containerPort: 80
 +    - containerPort: 81
- 
 --- tests/diffs/left.yml v1>Pod>default>nginx-left
 +++ tests/diffs/right.yml v1>Pod>default>nginx-left
 @@ -1,12 +1 @@
@@ -41,7 +39,6 @@
 -    image: nginx:1.14.2
 -    ports:
 -    - containerPort: 80
- 
 --- tests/diffs/left.yml v1>Pod>default>nginx-right
 +++ tests/diffs/right.yml v1>Pod>default>nginx-right
 @@ -1 +1,12 @@
@@ -56,4 +53,3 @@
 +    image: nginx:1.14.2
 +    ports:
 +    - containerPort: 80
- 

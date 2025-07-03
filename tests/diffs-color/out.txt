@@ -17,7 +17,6 @@
 [32m+        image: nginx:1.14.2[0m
          ports:
          - containerPort: 80
- 
 [31m--- [33mtests/diffs-color/left.yml v1>Pod>default>nginx-common[0m[0m
 [32m+++ [33mtests/diffs-color/right.yml v1>Pod>default>nginx-common[0m[0m
 @@ -8,5 +8,5 @@
@@ -26,7 +25,6 @@
      ports:
 [31m-    - containerPort: 80[0m
 [32m+    - containerPort: 81[0m
- 
 [31m--- [33mtests/diffs-color/left.yml v1>Pod>default>nginx-left[0m[0m
 [32m+++ [33mtests/diffs-color/right.yml v1>Pod>default>nginx-left[0m[0m
 @@ -1,12 +1 @@
@@ -41,7 +39,6 @@
 [31m-    image: nginx:1.14.2[0m
 [31m-    ports:[0m
 [31m-    - containerPort: 80[0m
- 
 [31m--- [33mtests/diffs-color/left.yml v1>Pod>default>nginx-right[0m[0m
 [32m+++ [33mtests/diffs-color/right.yml v1>Pod>default>nginx-right[0m[0m
 @@ -1 +1,12 @@
@@ -56,4 +53,3 @@
 [32m+    image: nginx:1.14.2[0m
 [32m+    ports:[0m
 [32m+    - containerPort: 80[0m
- 
