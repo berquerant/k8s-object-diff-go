@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log/slog"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/berquerant/k8s-object-diff-go/internal"
@@ -79,6 +81,13 @@ func TestDMP(t *testing.T) {
 			Patches:    patches,
 		}
 	}
+	lines := func(i, j int) string {
+		v := make([]string, j-i+1)
+		for t := 0; t < len(v); t++ {
+			v[t] = strconv.Itoa(t + i)
+		}
+		return strings.Join(v, "\n") + "\n"
+	}
 	for _, tc := range []struct {
 		title       string
 		left        string
@@ -87,6 +96,74 @@ func TestDMP(t *testing.T) {
 		want        *internal.DMPResult
 		noDiff      bool
 	}{
+		{
+			title:       "split large",
+			left:        lines(1, 3) + lines(4, 4) + lines(6, 12) + lines(13, 14) + lines(21, 30),
+			right:       lines(1, 3) + lines(5, 5) + lines(6, 12) + lines(15, 20) + lines(21, 30) + lines(31, 33),
+			contextSize: 3,
+			want: newResult(&internal.DMPPatch{
+				LeftStart:   1,
+				LeftLength:  7,
+				RightStart:  1,
+				RightLength: 7,
+				Hunks: []*internal.DMPHunk{
+					{
+						Op:   internal.DMPOpEqual,
+						Body: lines(1, 3),
+					},
+					{
+						Op:   internal.DMPOpDelete,
+						Body: lines(4, 4),
+					},
+					{
+						Op:   internal.DMPOpInsert,
+						Body: lines(5, 5),
+					},
+					{
+						Op:   internal.DMPOpEqual,
+						Body: lines(6, 8),
+					},
+				},
+			}, &internal.DMPPatch{
+				LeftStart:   9,
+				LeftLength:  8,
+				RightStart:  9,
+				RightLength: 12,
+				Hunks: []*internal.DMPHunk{
+					{
+						Op:   internal.DMPOpEqual,
+						Body: lines(10, 12),
+					},
+					{
+						Op:   internal.DMPOpDelete,
+						Body: lines(13, 14),
+					},
+					{
+						Op:   internal.DMPOpInsert,
+						Body: lines(15, 20),
+					},
+					{
+						Op:   internal.DMPOpEqual,
+						Body: lines(21, 23),
+					},
+				},
+			}, &internal.DMPPatch{
+				LeftStart:   21,
+				LeftLength:  3,
+				RightStart:  25,
+				RightLength: 6,
+				Hunks: []*internal.DMPHunk{
+					{
+						Op:   internal.DMPOpEqual,
+						Body: lines(28, 30),
+					},
+					{
+						Op:   internal.DMPOpInsert,
+						Body: lines(31, 33),
+					},
+				},
+			}),
+		},
 		{
 			title: "split hunks2",
 			left: `line1

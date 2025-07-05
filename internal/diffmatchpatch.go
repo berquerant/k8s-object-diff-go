@@ -251,18 +251,14 @@ var errWritePatchHeaders = errors.New("WritePatchHeaders")
 
 func (p *DMP) writePatchHeaders(patches []*DMPPatch) ([]*DMPPatch, error) {
 	var (
-		result                        = make([]*DMPPatch, len(patches))
-		contextSize                   = p.Context
-		leftLinum, rightLinum         int
-		nextLeftLinum, nextRightLinum int
+		result                = make([]*DMPPatch, len(patches))
+		contextSize           = p.Context
+		leftLinum, rightLinum int
 	)
 	for i, p := range patches {
 		if len(p.Hunks) == 0 || len(p.Hunks) == 1 && p.Hunks[0].Op == DMPOpEqual {
 			return nil, fmt.Errorf("invalid hunk: %#v: %w", p, errWritePatchHeaders)
 		}
-		// save the next base line numbers
-		nextLeftLinum = leftLinum + p.leftLength()
-		nextRightLinum = rightLinum + p.rightLength()
 
 		cloned := p.clone()
 		result[i] = cloned
@@ -276,7 +272,14 @@ func (p *DMP) writePatchHeaders(patches []*DMPPatch) ([]*DMPPatch, error) {
 			}
 			if i > 0 {
 				// subtract extra rows of Equal from base linum
-				delta -= n
+				// because given patches are like:
+				// [Equal1, Insert1, Delete1, Equal2]
+				// [Equal2, Insert2, Equal3]
+				// [Equal3, ...]
+				// ...
+				// so overlapped Equals produce extra rows
+				leftLinum -= n
+				rightLinum -= n
 			}
 			cloned.LeftStart = leftLinum + delta
 			cloned.RightStart = rightLinum + delta
@@ -316,8 +319,8 @@ func (p *DMP) writePatchHeaders(patches []*DMPPatch) ([]*DMPPatch, error) {
 		cloned.LeftLength = cloned.leftLength()
 		cloned.RightLength = cloned.rightLength()
 
-		leftLinum = nextLeftLinum
-		rightLinum = nextRightLinum
+		leftLinum += p.leftLength()
+		rightLinum += p.rightLength()
 	}
 
 	return result, nil
