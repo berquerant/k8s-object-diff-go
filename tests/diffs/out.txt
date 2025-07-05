@@ -9,7 +9,7 @@
    selector:
      matchLabels:
        app: nginx
-@@ -16,7 +16,7 @@
+@@ -16,6 +16,6 @@
      spec:
        containers:
        - name: nginx
@@ -19,7 +19,7 @@
          - containerPort: 80
 --- tests/diffs/left.yml v1>Pod>default>nginx-common
 +++ tests/diffs/right.yml v1>Pod>default>nginx-common
-@@ -8,5 +8,5 @@
+@@ -8,4 +8,4 @@
    - name: nginx
      image: nginx:1.14.2
      ports:
@@ -27,7 +27,7 @@
 +    - containerPort: 81
 --- tests/diffs/left.yml v1>Pod>default>nginx-left
 +++ tests/diffs/right.yml v1>Pod>default>nginx-left
-@@ -1,12 +1 @@
+@@ -1,11 +0,0 @@
 -apiVersion: v1
 -kind: Pod
 -metadata:
@@ -41,7 +41,7 @@
 -    - containerPort: 80
 --- tests/diffs/left.yml v1>Pod>default>nginx-right
 +++ tests/diffs/right.yml v1>Pod>default>nginx-right
-@@ -1 +1,12 @@
+@@ -0,0 +1,11 @@
 +apiVersion: v1
 +kind: Pod
 +metadata:

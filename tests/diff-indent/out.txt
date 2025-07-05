@@ -9,7 +9,7 @@
      selector:
          matchLabels:
              app: nginx
-@@ -16,7 +16,7 @@
+@@ -16,6 +16,6 @@
          spec:
              containers:
              - name: nginx

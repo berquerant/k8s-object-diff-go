@@ -1,3 +1,3 @@
-- diff: "--- tests/left-only/left.yml v1>Pod>default>nginx\n+++ tests/left-only/right.yml v1>Pod>default>nginx\n@@ -1,12 +1 @@\n-apiVersion: v1\n-kind: Pod\n-metadata:\n-  name: nginx\n-  namespace: default\n-spec:\n-  containers:\n-  - name: nginx\n-    image: nginx:1.14.2\n-    ports:\n-    - containerPort: 80\n"
+- diff: "--- tests/left-only/left.yml v1>Pod>default>nginx\n+++ tests/left-only/right.yml v1>Pod>default>nginx\n@@ -1,11 +0,0 @@\n-apiVersion: v1\n-kind: Pod\n-metadata:\n-  name: nginx\n-  namespace: default\n-spec:\n-  containers:\n-  - name: nginx\n-    image: nginx:1.14.2\n-    ports:\n-    - containerPort: 80\n"
   id: v1>Pod>default>nginx
   left: "apiVersion: v1\nkind: Pod\nmetadata:\n  name: nginx\n  namespace: default\nspec:\n  containers:\n  - name: nginx\n    image: nginx:1.14.2\n    ports:\n    - containerPort: 80\n"

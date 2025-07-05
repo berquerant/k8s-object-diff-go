@@ -1,6 +1,6 @@
 --- tests/left-only/left.yml v1>Pod>default>nginx
 +++ tests/left-only/right.yml v1>Pod>default>nginx
-@@ -1,12 +1 @@
+@@ -1,11 +0,0 @@
 -apiVersion: v1
 -kind: Pod
 -metadata:
