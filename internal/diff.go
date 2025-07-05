@@ -62,17 +62,13 @@ func (d *ProcessObjectDiffBuilder) generateArgs(objectID, srcFile, destFile stri
 		fmt.Sprintf("--unified=%d", d.diffContext),
 	}
 
-	left := d.left + " " + objectID
-	right := d.right + " " + objectID
 	if d.color {
-		left = NewDiffHeader(left)
-		right = NewDiffHeader(right)
 		args = append(args, "--color=always")
 	} else {
 		args = append(args, "--color=never")
 	}
 
-	args = append(args, "--label", left, "--label", right)
+	args = append(args, "--label", newDiffHeader(d.left, objectID, d.color), "--label", newDiffHeader(d.right, objectID, d.color))
 	args = append(args, d.args...)
 	args = append(args, srcFile, destFile)
 	return args
@@ -204,19 +200,4 @@ func (d *ObjectDiffBuilder) ObjectDiff(_ context.Context, pair *ObjectPair) (*Ob
 		Pair: pair,
 		Diff: diff.IntoString(d.color),
 	}, nil
-}
-
-func NewDiffHeader(s string) string {
-	// yellow
-	return fmt.Sprintf("\x1b[33m%s\x1b[0m", s)
-}
-
-func NewDeleteString(s string) string {
-	// red
-	return fmt.Sprintf("\x1b[31m%s\x1b[0m", s)
-}
-
-func NewInsertString(s string) string {
-	// green
-	return fmt.Sprintf("\x1b[32m%s\x1b[0m", s)
 }
