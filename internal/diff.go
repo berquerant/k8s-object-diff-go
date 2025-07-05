@@ -3,14 +3,12 @@ package internal
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
-
-	"github.com/pmezard/go-difflib/difflib"
 )
 
 type ObjectDiff struct {
@@ -20,6 +18,14 @@ type ObjectDiff struct {
 
 type ObjectDiffer interface {
 	ObjectDiff(ctx context.Context, pair *ObjectPair) (*ObjectDiff, error)
+}
+
+func newDiffHeader(name, objectID string, color bool) string {
+	x := name + " " + objectID
+	if color {
+		return yellowString(x)
+	}
+	return x
 }
 
 type ProcessObjectDiffBuilder struct {
@@ -179,45 +185,24 @@ func (d *ObjectDiffBuilder) ObjectDiff(_ context.Context, pair *ObjectPair) (*Ob
 		}, nil
 	}
 
-	u := difflib.UnifiedDiff{
-		A:        difflib.SplitLines(leftBody),
-		B:        difflib.SplitLines(rightBody),
-		FromFile: fmt.Sprintf("%s %s", d.left, pair.ID),
-		ToFile:   fmt.Sprintf("%s %s", d.right, pair.ID),
-		Context:  d.diffContext,
+	dmp := &DMP{
+		LeftLabel:  newDiffHeader(d.left, pair.ID, d.color),
+		RightLabel: newDiffHeader(d.right, pair.ID, d.color),
+		Context:    d.diffContext,
 	}
-	if d.color {
-		u.FromFile = NewDiffHeader(u.FromFile)
-		u.ToFile = NewDiffHeader(u.ToFile)
-	}
-	diff, err := difflib.GetUnifiedDiffString(u)
+	diff, err := dmp.Diff(leftBody, rightBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get diff: id=%s: %w", pair.ID, err)
-	}
-
-	if d.color {
-		diffs := strings.Split(diff, "\n")
-		for i, x := range diffs {
-			if len(x) == 0 {
-				continue
-			}
-			switch x[0] {
-			case '-':
-				diffs[i] = NewDeleteString(x)
-			case '+':
-				diffs[i] = NewInsertString(x)
-			}
+		if errors.Is(err, ErrDMPNoDiff) {
+			return &ObjectDiff{
+				Pair: pair,
+			}, nil
 		}
-		diff = strings.Join(diffs, "\n")
-	}
-	// remove trailing space newline
-	if len(diff) > 2 && diff[len(diff)-2] == ' ' && diff[len(diff)-1] == '\n' {
-		diff = diff[:len(diff)-2]
+		return nil, fmt.Errorf("failed to get diff: id=%s: %w", pair.ID, err)
 	}
 
 	return &ObjectDiff{
 		Pair: pair,
-		Diff: diff,
+		Diff: diff.IntoString(d.color),
 	}, nil
 }
 
