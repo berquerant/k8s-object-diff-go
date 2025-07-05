@@ -155,6 +155,10 @@ func main() {
 		version.Write(os.Stdout)
 		return
 	}
+	if c.Context < 0 {
+		slog.Error("invalid context length")
+		os.Exit(exitCodeFailure)
+	}
 
 	if fs.NArg() != 3 {
 		slog.Error("2 files are required")
