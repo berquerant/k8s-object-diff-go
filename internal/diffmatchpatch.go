@@ -25,7 +25,7 @@ func (p DMPOp) String() string {
 	case DMPOpInsert:
 		return "+"
 	default:
-		return ""
+		return " "
 	}
 }
 
@@ -178,8 +178,8 @@ type DMPResult struct {
 }
 
 func (r *DMPResult) header(color bool) string {
-	left := "---" + r.LeftLabel
-	right := "+++" + r.RightLabel
+	left := "--- " + r.LeftLabel
+	right := "+++ " + r.RightLabel
 	if color {
 		left = redString(left)
 		right = greenString(right)
