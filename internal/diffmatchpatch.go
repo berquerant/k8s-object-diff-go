@@ -53,11 +53,20 @@ func (h *DMPHunk) clone() *DMPHunk {
 }
 
 func (h *DMPHunk) IntoString(color bool) string {
-	x := h.Op.String() + h.Body
-	if color {
-		return h.Op.Color()(x)
+	ss := strings.Split(h.Body, "\n")
+	xs := make([]string, len(ss))
+	for i, s := range ss {
+		if i == len(ss)-1 && s == "" {
+			xs[i] = s
+			continue
+		}
+		x := h.Op.String() + s
+		if color {
+			x = h.Op.Color()(x)
+		}
+		xs[i] = x
 	}
-	return x
+	return strings.Join(xs, "\n")
 }
 
 func (h *DMPHunk) countLines() int {

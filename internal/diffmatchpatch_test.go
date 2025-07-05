@@ -10,6 +10,58 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestDMPHunk(t *testing.T) {
+	t.Run("IntoString", func(t *testing.T) {
+		for _, tc := range []struct {
+			title string
+			hunk  *internal.DMPHunk
+			want  string
+		}{
+			{
+				title: "equal",
+				hunk: &internal.DMPHunk{
+					Op: internal.DMPOpEqual,
+					Body: `line1
+line2
+`,
+				},
+				want: `line1
+line2
+`,
+			},
+			{
+				title: "insert",
+				hunk: &internal.DMPHunk{
+					Op: internal.DMPOpInsert,
+					Body: `line1
+line2
+`,
+				},
+				want: `+line1
++line2
+`,
+			},
+			{
+				title: "delete",
+				hunk: &internal.DMPHunk{
+					Op: internal.DMPOpDelete,
+					Body: `line1
+line2
+`,
+				},
+				want: `-line1
+-line2
+`,
+			},
+		} {
+			t.Run(tc.title, func(t *testing.T) {
+				got := tc.hunk.IntoString(false)
+				assert.Equal(t, tc.want, got)
+			})
+		}
+	})
+}
+
 func TestDMP(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
