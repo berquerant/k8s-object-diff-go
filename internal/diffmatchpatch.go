@@ -272,7 +272,7 @@ func (p *DMP) writePatchHeaders(patches []*DMPPatch) ([]*DMPPatch, error) {
 			cloned.headHunk().Body = p.headHunk().tail(contextSize)
 			delta := n - contextSize + 1
 			if delta < 0 {
-				return nil, fmt.Errorf("invalid headHunk delta: %#v: %w", p, errWritePatchHeaders)
+				delta = 0
 			}
 			if i > 0 {
 				// subtract extra rows of Equal from base linum
