@@ -25,8 +25,8 @@ func TestDMPHunk(t *testing.T) {
 line2
 `,
 				},
-				want: `line1
-line2
+				want: ` line1
+ line2
 `,
 			},
 			{
