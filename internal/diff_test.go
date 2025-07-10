@@ -111,10 +111,11 @@ func TestProcessObjectDiffBuilder(t *testing.T) {
 			_ = os.Setenv(diffTestExitCode, strconv.Itoa(tc.exitCode))
 			defer os.Unsetenv(diffTestExitCode)
 
-			x := internal.NewProcessObjectDiffBuilder(
-				command, tc.args,
+			x := internal.NewObjectDiffBuilder(
+				internal.NewProcessDiffer(command, tc.args),
 				leftFile, rightFile,
-				diffContext, tc.color,
+				diffContext,
+				tc.color,
 			)
 			got, err := x.ObjectDiff(context.TODO(), tc.pair)
 			if tc.err {

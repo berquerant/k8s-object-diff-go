@@ -56,15 +56,20 @@ func runObjDiff(ctx context.Context, c *Config, left, right string) error {
 func newObjectDiffer(c *Config, left, right string) (internal.ObjectDiffer, error) {
 	cmd, err := c.diffCommand()
 	if err == nil {
-		return internal.NewProcessObjectDiffBuilder(
-			cmd[0], cmd[1:],
+		return internal.NewObjectDiffBuilder(
+			internal.NewProcessDiffer(cmd[0], cmd[1:]),
 			left, right,
 			c.Context,
 			c.Color,
 		), nil
 	}
 	if errors.Is(err, errNoDiffCommand) {
-		return internal.NewObjectDiffBuilder(left, right, c.Context, c.Color), nil
+		return internal.NewObjectDiffBuilder(
+			internal.NewDMPDiffer(),
+			left, right,
+			c.Context,
+			c.Color,
+		), nil
 	}
 	return nil, err
 }
