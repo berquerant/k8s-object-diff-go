@@ -1,5 +1,8 @@
-apps/v1>Deployment>>nginx-deployment
-v1>Pod>default>nginx
-v1>Pod>default>nginx-common
-v1>Pod>default>nginx-left
-v1>Pod>default>nginx-right
+--- tests/diffs-cmd/left.yml
++++ tests/diffs-cmd/right.yml
+@@ -1,4 +1,4 @@
+ apps/v1>Deployment>>nginx-deployment
+ v1>Pod>default>nginx
+ v1>Pod>default>nginx-common
+-v1>Pod>default>nginx-left
++v1>Pod>default>nginx-right

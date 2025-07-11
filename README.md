@@ -22,9 +22,13 @@ e.g.
 then id is 'v1>Pod>default>nginx'.
 
 # Output format
-## id
+## idlist
 
 All object IDs.
+
+## id
+
+ID diff.
 
 ## text
 
@@ -62,7 +66,7 @@ invokes
       --debug               enable debug log
   -x, --diffCmd string      invoke this to get diff instead of builtin differ
   -n, --indent int          yaml indent (default 2)
-  -o, --out string          output format: text,yaml,id (default "text")
+  -o, --out string          output format: text,yaml,id,idlist (default "text")
   -q, --quiet               quiet log
   -d, --separator string    object id separator (default ">")
       --success             exit with 0 even if inputs differ

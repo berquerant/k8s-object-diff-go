@@ -26,6 +26,8 @@ list | while read -r target ; do
     run "$target" text > "${target}/out.txt"
     # for output yaml
     run "$target" yaml > "${target}/out.yml"
+    # for output idlist
+    run "$target" idlist > "${target}/out.idlist"
 done
 
 echo >&2 "End golden"

@@ -35,9 +35,13 @@ e.g.
 then id is 'v1>Pod>default>nginx'.
 
 # Output format
-## id
+## idlist
 
 All object IDs.
+
+## id
+
+ID diff.
 
 ## text
 
@@ -74,7 +78,7 @@ type Config struct {
 	Context           int    `name:"context" short:"C" default:"3" usage:"diff context"`
 	Separator         string `name:"separator" short:"d" default:">" usage:"object id separator"`
 	Indent            int    `name:"indent" short:"n" default:"2" usage:"yaml indent"`
-	Out               string `name:"out" short:"o" default:"text" usage:"output format: text,yaml,id"`
+	Out               string `name:"out" short:"o" default:"text" usage:"output format: text,yaml,id,idlist"`
 	Debug             bool   `name:"debug" usage:"enable debug log"`
 	Quiet             bool   `name:"quiet" short:"q" usage:"quiet log"`
 	Color             bool   `name:"color" short:"c" usage:"colored diff"`
@@ -90,6 +94,7 @@ const (
 	outModeText    outMode = "text"
 	outModeYaml    outMode = "yaml"
 	outModeID      outMode = "id"
+	outModeIDList  outMode = "idlist"
 )
 
 func (c *Config) outMode() outMode {
@@ -100,6 +105,8 @@ func (c *Config) outMode() outMode {
 		return outModeYaml
 	case string(outModeID):
 		return outModeID
+	case string(outModeIDList):
+		return outModeIDList
 	default:
 		return outModeUnknown
 	}

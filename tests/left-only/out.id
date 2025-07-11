@@ -1,1 +1,4 @@
-v1>Pod>default>nginx
+--- tests/left-only/left.yml
++++ tests/left-only/right.yml
+@@ -1,1 +0,0 @@
+-v1>Pod>default>nginx

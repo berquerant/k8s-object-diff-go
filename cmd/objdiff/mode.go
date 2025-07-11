@@ -10,15 +10,22 @@ import (
 )
 
 type diffPrinter struct {
-	mode      outMode
-	pairs     []*internal.ObjectPair
-	differ    internal.ObjectDiffer
-	marshaler internal.Marshaler
+	mode         outMode
+	pairs        []*internal.ObjectPair
+	differ       internal.Differ
+	objectDiffer internal.ObjectDiffer
+	marshaler    internal.Marshaler
+	diffContext  int
+	color        bool
+	left         string
+	right        string
 }
 
 func (p *diffPrinter) print(ctx context.Context) error {
 	switch p.mode {
 	case outModeID:
+		return p.printObjectIDDiff(ctx)
+	case outModeIDList:
 		return p.printObjectIDList()
 	case outModeYaml:
 		return p.printYamlDiff(ctx)
@@ -36,6 +43,55 @@ func (p *diffPrinter) printObjectIDList() error {
 	return nil
 }
 
+func (p *diffPrinter) printObjectIDDiff(ctx context.Context) error {
+	var (
+		leftIDList  []string
+		rightIDList []string
+	)
+	for _, x := range p.pairs {
+		if x.Left != nil {
+			leftIDList = append(leftIDList, x.ID)
+		}
+		if x.Right != nil {
+			rightIDList = append(rightIDList, x.ID)
+		}
+	}
+	var (
+		join = func(xs []string) string {
+			v := strings.Join(xs, "\n")
+			if v != "" {
+				return v + "\n"
+			}
+			return ""
+		}
+		left      = join(leftIDList)
+		right     = join(rightIDList)
+		newHeader = func(s string) string {
+			if p.color {
+				return internal.YellowString(s)
+			}
+			return s
+		}
+	)
+	d, err := p.differ.Diff(ctx, &internal.DiffRequest{
+		Left:       left,
+		Right:      right,
+		LeftLabel:  newHeader(p.left),
+		RightLabel: newHeader(p.right),
+		Color:      p.color,
+		Context:    p.diffContext,
+	})
+	if err != nil {
+		return err
+	}
+	if d.Diff == "" {
+		slog.Debug("no diff")
+		return nil
+	}
+	fmt.Print(d.Diff)
+	return errDiffFound
+}
+
 func (p *diffPrinter) printTextDiff(ctx context.Context) error {
 	var diffFound bool
 
@@ -45,7 +101,7 @@ func (p *diffPrinter) printTextDiff(ctx context.Context) error {
 			slog.Error("missing object", slog.String("id", x.ID))
 			continue
 		}
-		d, err := p.differ.ObjectDiff(ctx, x)
+		d, err := p.objectDiffer.ObjectDiff(ctx, x)
 		if err != nil {
 			return err
 		}
@@ -77,7 +133,7 @@ func (p *diffPrinter) printYamlDiff(ctx context.Context) error {
 			slog.Error("missing object", slog.String("id", x.ID))
 			continue
 		}
-		d, err := p.differ.ObjectDiff(ctx, x)
+		d, err := p.objectDiffer.ObjectDiff(ctx, x)
 		if err != nil {
 			return err
 		}

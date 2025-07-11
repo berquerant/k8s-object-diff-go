@@ -100,6 +100,15 @@ func TestEndToEnd(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, want, got)
 			})
+			t.Run("idlist", func(t *testing.T) {
+				want, err := readAll("out.idlist")
+				if !assert.Nil(t, err) {
+					return
+				}
+				got, err := run("idlist")
+				assert.Nil(t, err)
+				assert.Equal(t, want, got)
+			})
 		})
 	}
 }

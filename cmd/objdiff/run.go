@@ -38,40 +38,41 @@ func runObjDiff(ctx context.Context, c *Config, left, right string) error {
 	pairs := pairMap.ObjectPairs()
 	slog.Debug("found pairs", slog.Int("len", len(pairs)))
 
-	differ, err := newObjectDiffer(c, left, right)
+	differ, err := newDiffer(c)
 	if err != nil {
 		return fmt.Errorf("differ: %w", err)
 	}
 
 	printer := &diffPrinter{
-		mode:      c.outMode(),
-		pairs:     pairs,
-		differ:    differ,
-		marshaler: internal.NewYamlMarshaler(c.Indent, false),
+		mode:   c.outMode(),
+		pairs:  pairs,
+		differ: differ,
+		objectDiffer: internal.NewObjectDiffBuilder(
+			differ,
+			left, right,
+			c.Context,
+			c.Color,
+		),
+		marshaler:   internal.NewYamlMarshaler(c.Indent, false),
+		color:       c.Color,
+		diffContext: c.Context,
+		left:        left,
+		right:       right,
 	}
 
 	return printer.print(ctx)
 }
 
-func newObjectDiffer(c *Config, left, right string) (internal.ObjectDiffer, error) {
+func newDiffer(c *Config) (internal.Differ, error) {
 	cmd, err := c.diffCommand()
-	if err == nil {
-		return internal.NewObjectDiffBuilder(
-			internal.NewProcessDiffer(cmd[0], cmd[1:]),
-			left, right,
-			c.Context,
-			c.Color,
-		), nil
+	switch {
+	case err == nil:
+		return internal.NewProcessDiffer(cmd[0], cmd[1:]), nil
+	case errors.Is(err, errNoDiffCommand):
+		return internal.NewDMPDiffer(), nil
+	default:
+		return nil, err
 	}
-	if errors.Is(err, errNoDiffCommand) {
-		return internal.NewObjectDiffBuilder(
-			internal.NewDMPDiffer(),
-			left, right,
-			c.Context,
-			c.Color,
-		), nil
-	}
-	return nil, err
 }
 
 func loadObjects(ctx context.Context, marshaler internal.Marshaler, file, sep string, allowDuplicateMapKey bool) (*internal.ObjectMap, error) {

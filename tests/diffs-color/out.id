@@ -1,5 +1,8 @@
-apps/v1>Deployment>>nginx-deployment
-v1>Pod>default>nginx
-v1>Pod>default>nginx-common
-v1>Pod>default>nginx-left
-v1>Pod>default>nginx-right
+[31m--- [33mtests/diffs-color/left.yml[0m[0m
+[32m+++ [33mtests/diffs-color/right.yml[0m[0m
+[36m@@ -1,4 +1,4 @@
+[0m apps/v1>Deployment>>nginx-deployment
+ v1>Pod>default>nginx
+ v1>Pod>default>nginx-common
+[31m-v1>Pod>default>nginx-left[0m
+[32m+v1>Pod>default>nginx-right[0m
