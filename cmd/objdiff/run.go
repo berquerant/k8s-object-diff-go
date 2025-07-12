@@ -81,7 +81,9 @@ func loadObjects(ctx context.Context, marshaler internal.Marshaler, file, sep st
 	if err != nil {
 		return nil, fmt.Errorf("failed to open %s: %w", file, err)
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	objects, err := internal.LoadObjects(ctx, f, marshaler, allowDuplicateMapKey)
 	if err != nil {

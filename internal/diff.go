@@ -67,14 +67,18 @@ func (d *ProcessDiffer) Diff(ctx context.Context, req *DiffRequest) (*DiffRespon
 	if err != nil {
 		return nil, fmt.Errorf("failed to get diff: mkdir: %w", err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() {
+		_ = os.RemoveAll(dir)
+	}()
 
 	writeFile := func(name, content string) error {
 		f, err := os.Create(name)
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer func() {
+			_ = f.Close()
+		}()
 		_, err = fmt.Fprint(f, content)
 		return err
 	}
