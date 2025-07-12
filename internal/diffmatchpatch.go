@@ -478,7 +478,7 @@ func (p *DMP) rawPatches(hunks []*DMPHunk) ([]*DMPPatch, error) {
 			}
 			continue
 		default: // Equal -> Equal
-			return nil, mkErr("prevChanged and curChanged cannnot both be false")
+			return nil, mkErr("prevChanged and curChanged cannot both be false")
 		}
 	}
 
