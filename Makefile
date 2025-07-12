@@ -19,7 +19,7 @@ init:
 	$(GOMOD) tidy -v
 
 .PHONY: lint
-lint: vet vuln
+lint: vet vuln golangci-lint
 
 .PHONY: vuln
 vuln:
@@ -28,6 +28,11 @@ vuln:
 .PHONY: vet
 vet:
 	go vet ./...
+
+.PHONY: golangci-lint
+golangci-lint:
+	go tool golangci-lint config verify -v
+	go tool golangci-lint run
 
 .PHONY: golden
 golden:
