@@ -153,7 +153,7 @@ func main() {
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(2)
+		os.Exit(exitCodeFailure)
 	}
 
 	setupLogger(os.Stderr, c.Debug, c.Quiet)
