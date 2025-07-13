@@ -114,7 +114,7 @@ func (p *diffPrinter) printTextDiff(ctx context.Context) error {
 		if !diffFound {
 			diffFound = true
 		}
-		fmt.Print(d.Diff)
+		_, _ = fmt.Fprint(p.out, d.Diff)
 	}
 
 	if diffFound {
