@@ -47,3 +47,5 @@ jobs:
         run: go mod download
       - name: Test
         run: make test
+      - name: Bench
+        run: make bench

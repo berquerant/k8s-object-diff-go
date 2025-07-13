@@ -29,6 +29,8 @@ jobs:
         run: make lint
       - name: Test
         run: make test
+      - name: Bench
+        run: make bench
       - name: Set env
         run: |
           echo "VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV

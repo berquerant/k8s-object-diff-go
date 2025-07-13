@@ -38,6 +38,10 @@ golangci-lint:
 golden:
 	./bin/golden.sh
 
+.PHONY: bench
+bench:
+	cd config ; go test -bench . -count=6 | go tool benchstat -
+
 # .PHONY: generate
 # generate:
 # 	go generate ./...
