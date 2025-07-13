@@ -1,9 +1,10 @@
-package main
+package config
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -12,18 +13,18 @@ import (
 	"github.com/berquerant/k8s-object-diff-go/internal"
 )
 
-var errDiffFound = errors.New("DiffFound")
+var ErrDiffFound = errors.New("DiffFound")
 
-func run(c *Config, left, right string) error {
+func (c *Config) Run(w io.Writer, left, right string) error {
 	ctx, stop := signal.NotifyContext(
 		context.Background(),
 		syscall.SIGINT, syscall.SIGTERM,
 	)
 	defer stop()
-	return runObjDiff(ctx, c, left, right)
+	return c.runObjDiff(ctx, w, left, right)
 }
 
-func runObjDiff(ctx context.Context, c *Config, left, right string) error {
+func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string) error {
 	marshaler := internal.NewYamlMarshaler(c.Indent, true)
 	leftMap, err := loadObjects(ctx, marshaler, left, c.Separator, c.AllowDuplicateKey)
 	if err != nil {
@@ -38,13 +39,13 @@ func runObjDiff(ctx context.Context, c *Config, left, right string) error {
 	pairs := pairMap.ObjectPairs()
 	slog.Debug("found pairs", slog.Int("len", len(pairs)))
 
-	differ, err := newDiffer(c)
+	differ, err := c.newDiffer()
 	if err != nil {
 		return fmt.Errorf("differ: %w", err)
 	}
 
 	printer := &diffPrinter{
-		mode:   c.outMode(),
+		mode:   c.OutMode(),
 		pairs:  pairs,
 		differ: differ,
 		objectDiffer: internal.NewObjectDiffBuilder(
@@ -58,21 +59,10 @@ func runObjDiff(ctx context.Context, c *Config, left, right string) error {
 		diffContext: c.Context,
 		left:        left,
 		right:       right,
+		out:         w,
 	}
 
 	return printer.print(ctx)
-}
-
-func newDiffer(c *Config) (internal.Differ, error) {
-	cmd, err := c.diffCommand()
-	switch {
-	case err == nil:
-		return internal.NewProcessDiffer(cmd[0], cmd[1:]), nil
-	case errors.Is(err, errNoDiffCommand):
-		return internal.NewDMPDiffer(), nil
-	default:
-		return nil, err
-	}
 }
 
 func loadObjects(ctx context.Context, marshaler internal.Marshaler, file, sep string, allowDuplicateMapKey bool) (*internal.ObjectMap, error) {

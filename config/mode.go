@@ -1,8 +1,9 @@
-package main
+package config
 
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"strings"
 
@@ -10,7 +11,7 @@ import (
 )
 
 type diffPrinter struct {
-	mode         outMode
+	mode         OutMode
 	pairs        []*internal.ObjectPair
 	differ       internal.Differ
 	objectDiffer internal.ObjectDiffer
@@ -19,15 +20,16 @@ type diffPrinter struct {
 	color        bool
 	left         string
 	right        string
+	out          io.Writer
 }
 
 func (p *diffPrinter) print(ctx context.Context) error {
 	switch p.mode {
-	case outModeID:
+	case OutModeID:
 		return p.printObjectIDDiff(ctx)
-	case outModeIDList:
+	case OutModeIDList:
 		return p.printObjectIDList()
-	case outModeYaml:
+	case OutModeYaml:
 		return p.printYamlDiff(ctx)
 	default:
 		return p.printTextDiff(ctx)
@@ -39,7 +41,7 @@ func (p *diffPrinter) printObjectIDList() error {
 	for i, x := range p.pairs {
 		xs[i] = x.ID
 	}
-	fmt.Println(strings.Join(xs, "\n"))
+	_, _ = fmt.Fprintln(p.out, strings.Join(xs, "\n"))
 	return nil
 }
 
@@ -88,8 +90,8 @@ func (p *diffPrinter) printObjectIDDiff(ctx context.Context) error {
 		slog.Debug("no diff")
 		return nil
 	}
-	fmt.Print(d.Diff)
-	return errDiffFound
+	_, _ = fmt.Fprint(p.out, d.Diff)
+	return ErrDiffFound
 }
 
 func (p *diffPrinter) printTextDiff(ctx context.Context) error {
@@ -116,7 +118,7 @@ func (p *diffPrinter) printTextDiff(ctx context.Context) error {
 	}
 
 	if diffFound {
-		return errDiffFound
+		return ErrDiffFound
 	}
 	return nil
 }
@@ -165,10 +167,10 @@ func (p *diffPrinter) printYamlDiff(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Print(string(b))
+	_, _ = fmt.Fprint(p.out, string(b))
 
 	if diffFound {
-		return errDiffFound
+		return ErrDiffFound
 	}
 	return nil
 }

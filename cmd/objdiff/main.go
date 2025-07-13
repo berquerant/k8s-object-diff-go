@@ -6,10 +6,8 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"os/exec"
-	"strings"
 
-	"github.com/berquerant/k8s-object-diff-go/internal"
+	"github.com/berquerant/k8s-object-diff-go/config"
 	"github.com/berquerant/k8s-object-diff-go/version"
 	"github.com/berquerant/structconfig"
 	"github.com/spf13/pflag"
@@ -74,62 +72,6 @@ invokes
 
 # Flags`
 
-type Config struct {
-	Context           int    `name:"context" short:"C" default:"3" usage:"diff context"`
-	Separator         string `name:"separator" short:"d" default:">" usage:"object id separator"`
-	Indent            int    `name:"indent" short:"n" default:"2" usage:"yaml indent"`
-	Out               string `name:"out" short:"o" default:"text" usage:"output format: text,yaml,id,idlist"`
-	Debug             bool   `name:"debug" usage:"enable debug log"`
-	Quiet             bool   `name:"quiet" short:"q" usage:"quiet log"`
-	Color             bool   `name:"color" short:"c" usage:"colored diff"`
-	DiffSuccess       bool   `name:"success" usage:"exit with 0 even if inputs differ"`
-	AllowDuplicateKey bool   `name:"allowDuplicateKey" default:"true" usage:"allow the use of keys with the same name in the same map"`
-	DiffCommand       string `name:"diffCmd" short:"x" usage:"invoke this to get diff instead of builtin differ"`
-}
-
-type outMode string
-
-const (
-	outModeUnknown outMode = "unknown"
-	outModeText    outMode = "text"
-	outModeYaml    outMode = "yaml"
-	outModeID      outMode = "id"
-	outModeIDList  outMode = "idlist"
-)
-
-func (c *Config) outMode() outMode {
-	switch c.Out {
-	case string(outModeText):
-		return outModeText
-	case string(outModeYaml):
-		return outModeYaml
-	case string(outModeID):
-		return outModeID
-	case string(outModeIDList):
-		return outModeIDList
-	default:
-		return outModeUnknown
-	}
-}
-
-var errNoDiffCommand = errors.New("NoDiffCommand")
-
-func (c *Config) diffCommand() ([]string, error) {
-	if len(c.DiffCommand) == 0 {
-		return nil, errNoDiffCommand
-	}
-	xs := strings.Split(internal.EscapeCommand(c.DiffCommand), " ")
-	if len(xs) == 0 {
-		panic("unreachable: diffCommand specified but no command")
-	}
-	head, err := exec.LookPath(xs[0])
-	if err != nil {
-		return nil, fmt.Errorf("lookup %s: %w", xs[0], err)
-	}
-	xs[0] = head
-	return xs, nil
-}
-
 const (
 	exitCodeDiffFound = 1
 	exitCodeFailure   = 2
@@ -144,8 +86,8 @@ func main() {
 
 	fs.Bool("version", false, "print objdiff version")
 	c, err := structconfig.NewConfigWithMerge(
-		structconfig.New[Config](),
-		structconfig.NewMerger[Config](),
+		structconfig.New[config.Config](),
+		structconfig.NewMerger[config.Config](),
 		fs,
 	)
 	if errors.Is(err, pflag.ErrHelp) {
@@ -171,13 +113,13 @@ func main() {
 		slog.Error("2 files are required")
 		os.Exit(exitCodeFailure)
 	}
-	if c.outMode() == outModeUnknown {
+	if c.OutMode() == config.OutModeUnknown {
 		slog.Error("invalid out", slog.String("out", c.Out))
 		os.Exit(exitCodeFailure)
 	}
 
-	if err := run(c, fs.Arg(1), fs.Arg(2)); err != nil {
-		if errors.Is(err, errDiffFound) {
+	if err := c.Run(os.Stdout, fs.Arg(1), fs.Arg(2)); err != nil {
+		if errors.Is(err, config.ErrDiffFound) {
 			if c.DiffSuccess {
 				return
 			}
