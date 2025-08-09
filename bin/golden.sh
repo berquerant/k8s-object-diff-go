@@ -11,7 +11,7 @@ run() {
     if [[ -s "${_target}/arg.txt" ]] ; then
         go run ./cmd/objdiff "${_target}/left.yml" "${_target}/right.yml" -o "${_out}" $(cat "${_target}/arg.txt"|tr '\n' " ") 2>/dev/null
     else
-            go run ./cmd/objdiff "${_target}/left.yml" "${_target}/right.yml" -o "${_out}" 2>/dev/null
+        go run ./cmd/objdiff "${_target}/left.yml" "${_target}/right.yml" -o "${_out}" 2>/dev/null
     fi
 }
 

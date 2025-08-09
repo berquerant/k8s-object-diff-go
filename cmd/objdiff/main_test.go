@@ -73,42 +73,37 @@ func TestEndToEnd(t *testing.T) {
 				return buf.String(), nil
 			}
 
-			t.Run("id", func(t *testing.T) {
-				want, err := readAll("out.id")
-				if !assert.Nil(t, err) {
-					return
-				}
-				got, err := run("id")
-				assert.Nil(t, err)
-				assert.Equal(t, want, got)
-			})
-			t.Run("text", func(t *testing.T) {
-				want, err := readAll("out.txt")
-				if !assert.Nil(t, err) {
-					return
-				}
-				got, err := run("text")
-				assert.Nil(t, err)
-				assert.Equal(t, want, got)
-			})
-			t.Run("yaml", func(t *testing.T) {
-				want, err := readAll("out.yml")
-				if !assert.Nil(t, err) {
-					return
-				}
-				got, err := run("yaml")
-				assert.Nil(t, err)
-				assert.Equal(t, want, got)
-			})
-			t.Run("idlist", func(t *testing.T) {
-				want, err := readAll("out.idlist")
-				if !assert.Nil(t, err) {
-					return
-				}
-				got, err := run("idlist")
-				assert.Nil(t, err)
-				assert.Equal(t, want, got)
-			})
+			for _, tc := range []struct {
+				name string
+				file string
+			}{
+				{
+					name: "id",
+					file: "out.id",
+				},
+				{
+					name: "text",
+					file: "out.txt",
+				},
+				{
+					name: "yaml",
+					file: "out.yml",
+				},
+				{
+					name: "idlist",
+					file: "out.idlist",
+				},
+			} {
+				t.Run(tc.name, func(t *testing.T) {
+					want, err := readAll(tc.file)
+					if !assert.Nil(t, err) {
+						return
+					}
+					got, err := run(tc.name)
+					assert.Nil(t, err)
+					assert.Equal(t, want, got)
+				})
+			}
 		})
 	}
 }
