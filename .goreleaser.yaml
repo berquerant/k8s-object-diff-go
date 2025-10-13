@@ -30,6 +30,8 @@ builds:
 archives:
   - formats: binary
     id: objdiff
+    files:
+      - NOTICE
 
 checksum:
   name_template: 'checksums.txt'
