@@ -31,10 +31,16 @@ vuln:
 vet:
 	go vet ./...
 
+ifdef DEVCONTAINER
+GOLANGCI_LINT := golangci-lint
+else
+GOLANGCI_LINT := go tool golangci-lint
+endif
+
 .PHONY: golangci-lint
 golangci-lint:
-	go tool golangci-lint config verify -v
-	go tool golangci-lint run
+	$(GOLANGCI_LINT) config verify -v
+	$(GOLANGCI_LINT) run
 
 .PHONY: golden
 golden:

@@ -1,0 +1,8 @@
+{
+  "name": "Go dev container",
+  "build": {
+    "dockerfile": "./Dockerfile",
+    "context": ".."
+  },
+  "workspaceFolder": "/usr/src/app"
+}
