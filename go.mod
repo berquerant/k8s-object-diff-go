@@ -12,7 +12,7 @@ tool (
 require (
 	al.essio.dev/pkg/shellescape v1.6.0
 	github.com/berquerant/structconfig v0.7.0
-	github.com/goccy/go-yaml v1.18.0
+	github.com/goccy/go-yaml v1.19.0
 	github.com/sergi/go-diff v1.4.0
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
