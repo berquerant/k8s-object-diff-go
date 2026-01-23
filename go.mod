@@ -1,6 +1,6 @@
 module github.com/berquerant/k8s-object-diff-go
 
-go 1.25.5
+go 1.25.6
 
 tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
