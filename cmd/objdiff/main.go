@@ -86,6 +86,7 @@ func main() {
 	}
 
 	fs.Bool("version", false, "print objdiff version")
+	fs.StringSliceP("label", "L", nil, "use label instead of file name and timestamp")
 	c, err := structconfig.NewConfigWithMerge(
 		structconfig.New[config.Config](),
 		structconfig.NewMerger[config.Config](),
@@ -98,6 +99,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(exitCodeFailure)
 	}
+	c.Labels, _ = fs.GetStringSlice("label")
 
 	setupLogger(os.Stderr, c.Debug, c.Quiet)
 

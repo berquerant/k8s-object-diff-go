@@ -10,17 +10,18 @@ import (
 )
 
 type Config struct {
-	Context           int    `name:"context" short:"C" default:"3" usage:"diff context"`
-	Separator         string `name:"separator" short:"d" default:">" usage:"object id separator"`
-	Indent            int    `name:"indent" short:"n" default:"2" usage:"yaml indent"`
-	Out               string `name:"out" short:"o" default:"text" usage:"output format: text,yaml,id,idlist"`
-	Debug             bool   `name:"debug" usage:"enable debug log"`
-	Quiet             bool   `name:"quiet" short:"q" usage:"quiet log"`
-	Color             bool   `name:"color" short:"c" usage:"colored diff"`
-	DiffSuccess       bool   `name:"success" usage:"exit with 0 even if inputs differ"`
-	AllowDuplicateKey bool   `name:"allowDuplicateKey" default:"true" usage:"allow the use of keys with the same name in the same map"`
-	DiffCommand       string `name:"diffCmd" short:"x" usage:"invoke this to get diff instead of builtin differ"`
-	Verbose           bool   `name:"verbose" short:"v" usage:"enable verbose output; annotate diff type and display summary"`
+	Context           int      `name:"context" short:"C" default:"3" usage:"diff context"`
+	Separator         string   `name:"separator" short:"d" default:">" usage:"object id separator"`
+	Indent            int      `name:"indent" short:"n" default:"2" usage:"yaml indent"`
+	Out               string   `name:"out" short:"o" default:"text" usage:"output format: text,yaml,id,idlist"`
+	Debug             bool     `name:"debug" usage:"enable debug log"`
+	Quiet             bool     `name:"quiet" short:"q" usage:"quiet log"`
+	Color             bool     `name:"color" short:"c" usage:"colored diff"`
+	DiffSuccess       bool     `name:"success" usage:"exit with 0 even if inputs differ"`
+	AllowDuplicateKey bool     `name:"allowDuplicateKey" default:"true" usage:"allow the use of keys with the same name in the same map"`
+	DiffCommand       string   `name:"diffCmd" short:"x" usage:"invoke this to get diff instead of builtin differ"`
+	Verbose           bool     `name:"verbose" short:"v" usage:"enable verbose output; annotate diff type and display summary"`
+	Labels            []string `name:"-"`
 }
 
 type OutMode string

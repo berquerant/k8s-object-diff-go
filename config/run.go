@@ -44,6 +44,13 @@ func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string
 		return fmt.Errorf("differ: %w", err)
 	}
 
+	switch {
+	case len(c.Labels) == 1:
+		left = c.Labels[0]
+	case len(c.Labels) > 1:
+		left, right = c.Labels[0], c.Labels[1]
+	}
+
 	printer := &diffPrinter{
 		mode:   c.OutMode(),
 		pairs:  pairs,

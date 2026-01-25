@@ -69,6 +69,7 @@ invokes
       --debug               enable debug log
   -x, --diffCmd string      invoke this to get diff instead of builtin differ
   -n, --indent int          yaml indent (default 2)
+  -L, --label strings       use label instead of file name and timestamp
   -o, --out string          output format: text,yaml,id,idlist (default "text")
   -q, --quiet               quiet log
   -d, --separator string    object id separator (default ">")
