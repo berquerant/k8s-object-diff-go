@@ -86,7 +86,7 @@ func main() {
 	}
 
 	fs.Bool("version", false, "print objdiff version")
-	fs.StringSliceP("label", "L", nil, "use label instead of file name and timestamp")
+	fs.StringSliceP("label", "L", nil, "use label instead of file name")
 	c, err := structconfig.NewConfigWithMerge(
 		structconfig.New[config.Config](),
 		structconfig.NewMerger[config.Config](),
