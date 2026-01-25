@@ -44,6 +44,7 @@ Array of
   diff: "Unified diff"
   left: "Left object (optional)"
   right: "Right object (optional)"
+  type: "Diff type (add or change or destroy)"
 
 # Exit status
 
