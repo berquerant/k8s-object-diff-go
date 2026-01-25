@@ -9,3 +9,5 @@ func yellowString(s string) string { return fmt.Sprintf("\x1b[33m%s\x1b[0m", s) 
 func cyanString(s string) string   { return fmt.Sprintf("\x1b[36m%s\x1b[0m", s) }
 
 func YellowString(s string) string { return yellowString(s) }
+func RedString(s string) string    { return redString(s) }
+func BoldString(s string) string   { return fmt.Sprintf("\033[1m%s\033[0m", s) }

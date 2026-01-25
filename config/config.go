@@ -20,6 +20,7 @@ type Config struct {
 	DiffSuccess       bool   `name:"success" usage:"exit with 0 even if inputs differ"`
 	AllowDuplicateKey bool   `name:"allowDuplicateKey" default:"true" usage:"allow the use of keys with the same name in the same map"`
 	DiffCommand       string `name:"diffCmd" short:"x" usage:"invoke this to get diff instead of builtin differ"`
+	Verbose           bool   `name:"verbose" short:"v" usage:"enable verbose output; annotate diff type and display summary"`
 }
 
 type OutMode string

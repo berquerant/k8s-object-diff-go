@@ -72,6 +72,7 @@ invokes
   -q, --quiet               quiet log
   -d, --separator string    object id separator (default ">")
       --success             exit with 0 even if inputs differ
+  -v, --verbose             enable verbose output; annotate diff type and display summary
       --version             print objdiff version
 ```
 

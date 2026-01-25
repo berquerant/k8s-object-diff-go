@@ -1,0 +1,61 @@
+# apps/v1>Deployment>>nginx-deployment will be updated
+--- tests/diffs-verbose/left.yml apps/v1>Deployment>>nginx-deployment
++++ tests/diffs-verbose/right.yml apps/v1>Deployment>>nginx-deployment
+@@ -5,7 +5,7 @@
+   labels:
+     app: nginx
+ spec:
+-  replicas: 1
++  replicas: 3
+   selector:
+     matchLabels:
+       app: nginx
+@@ -16,6 +16,6 @@
+     spec:
+       containers:
+       - name: nginx
+-        image: nginx:1.14.3
++        image: nginx:1.14.2
+         ports:
+         - containerPort: 80
+# v1>Pod>default>nginx-common will be updated
+--- tests/diffs-verbose/left.yml v1>Pod>default>nginx-common
++++ tests/diffs-verbose/right.yml v1>Pod>default>nginx-common
+@@ -8,4 +8,4 @@
+   - name: nginx
+     image: nginx:1.14.2
+     ports:
+-    - containerPort: 80
++    - containerPort: 81
+# v1>Pod>default>nginx-left will be destroyed
+--- tests/diffs-verbose/left.yml v1>Pod>default>nginx-left
++++ tests/diffs-verbose/right.yml v1>Pod>default>nginx-left
+@@ -1,11 +0,0 @@
+-apiVersion: v1
+-kind: Pod
+-metadata:
+-  name: nginx-left
+-  namespace: default
+-spec:
+-  containers:
+-  - name: nginx
+-    image: nginx:1.14.2
+-    ports:
+-    - containerPort: 80
+# v1>Pod>default>nginx-right will be created
+--- tests/diffs-verbose/left.yml v1>Pod>default>nginx-right
++++ tests/diffs-verbose/right.yml v1>Pod>default>nginx-right
+@@ -0,0 +1,11 @@
++apiVersion: v1
++kind: Pod
++metadata:
++  name: nginx-right
++  namespace: default
++spec:
++  containers:
++  - name: nginx
++    image: nginx:1.14.2
++    ports:
++    - containerPort: 80
+
+Summary: 1 to add, 2 to change, 1 to destroy.

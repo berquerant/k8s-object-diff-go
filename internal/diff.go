@@ -151,9 +151,34 @@ func (*DMPDiffer) Diff(ctx context.Context, req *DiffRequest) (*DiffResponse, er
 	}, nil
 }
 
+type DiffType int
+
+const (
+	DiffTypeUnchange DiffType = iota
+	DiffTypeAdd
+	DiffTypeChange
+	DiffTypeDestroy
+)
+
+func (t DiffType) String() string {
+	switch t {
+	case DiffTypeUnchange:
+		return "unchange"
+	case DiffTypeAdd:
+		return "add"
+	case DiffTypeChange:
+		return "change"
+	case DiffTypeDestroy:
+		return "destroy"
+	default:
+		return "unknown"
+	}
+}
+
 type ObjectDiff struct {
 	Pair *ObjectPair
 	Diff string
+	Type DiffType
 }
 
 type ObjectDiffer interface {
@@ -215,14 +240,28 @@ func (d *ObjectDiffBuilder) ObjectDiff(ctx context.Context, pair *ObjectPair) (*
 		return nil, fmt.Errorf("failed to get diff: id=%s: %w", pair.ID, err)
 	}
 
+	var diffType DiffType
+	switch {
+	case diff.Diff == "":
+		diffType = DiffTypeUnchange
+	case pair.Left == nil && pair.Right != nil:
+		diffType = DiffTypeAdd
+	case pair.Left != nil && pair.Right == nil:
+		diffType = DiffTypeDestroy
+	default:
+		diffType = DiffTypeChange
+	}
+
 	if diff.Diff == "" {
 		return &ObjectDiff{
 			Pair: pair,
+			Type: diffType,
 		}, nil
 	}
 
 	return &ObjectDiff{
 		Pair: pair,
 		Diff: diff.Diff,
+		Type: diffType,
 	}, nil
 }

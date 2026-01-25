@@ -60,6 +60,7 @@ func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string
 		left:        left,
 		right:       right,
 		out:         w,
+		verbose:     c.Verbose,
 	}
 
 	return printer.print(ctx)
