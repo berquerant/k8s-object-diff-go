@@ -266,10 +266,7 @@ func (p *DMP) writePatchHeaders(patches []*DMPPatch) ([]*DMPPatch, error) {
 		if p.headHunk().Op == DMPOpEqual {
 			n := p.headHunk().countLines()
 			cloned.headHunk().Body = p.headHunk().tail(contextSize)
-			delta := n - contextSize + 1
-			if delta < 0 {
-				delta = 0
-			}
+			delta := max(n-contextSize+1, 0)
 			if i > 0 {
 				// subtract extra rows of Equal from base linum
 				// because given patches are like:

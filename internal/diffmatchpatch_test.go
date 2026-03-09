@@ -83,7 +83,7 @@ func TestDMP(t *testing.T) {
 	}
 	lines := func(i, j int) string {
 		v := make([]string, j-i+1)
-		for t := 0; t < len(v); t++ {
+		for t := range v {
 			v[t] = strconv.Itoa(t + i)
 		}
 		return strings.Join(v, "\n") + "\n"
