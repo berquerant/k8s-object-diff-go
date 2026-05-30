@@ -2,7 +2,7 @@ ARG GO_VERSION=1.26
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}
 
 ENV DEVCONTAINER=true
-RUN go install golang.org/x/tools/gopls@v0.21.1
+RUN go install golang.org/x/tools/gopls@v0.22.0
 RUN go install golang.org/x/tools/cmd/goimports@v0.43.0
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,source=go.sum,target=go.sum \
