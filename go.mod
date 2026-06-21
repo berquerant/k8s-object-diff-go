@@ -11,7 +11,6 @@ tool (
 
 require (
 	al.essio.dev/pkg/shellescape v1.6.0
-	github.com/berquerant/structconfig v0.7.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/sergi/go-diff v1.4.0
 	github.com/spf13/pflag v1.0.10
@@ -223,7 +222,6 @@ require (
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/exp/typeparams v0.0.0-20260209203927-2842357ff358 // indirect
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.53.0 // indirect

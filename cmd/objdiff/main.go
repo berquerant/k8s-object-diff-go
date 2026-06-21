@@ -9,7 +9,6 @@ import (
 
 	"github.com/berquerant/k8s-object-diff-go/config"
 	"github.com/berquerant/k8s-object-diff-go/version"
-	"github.com/berquerant/structconfig"
 	"github.com/spf13/pflag"
 )
 
@@ -86,12 +85,22 @@ func main() {
 	}
 
 	fs.Bool("version", false, "print objdiff version")
-	fs.StringSliceP("label", "L", nil, "use label instead of file name")
-	c, err := structconfig.NewConfigWithMerge(
-		structconfig.New[config.Config](),
-		structconfig.NewMerger[config.Config](),
-		fs,
-	)
+
+	var c config.Config
+	fs.StringSliceVarP(&c.Labels, "label", "L", nil, "use label instead of file name")
+	fs.IntVarP(&c.Context, "context", "C", 3, "diff context")
+	fs.StringVarP(&c.Separator, "separator", "d", ">", "object id separator")
+	fs.IntVarP(&c.Indent, "indent", "n", 2, "yaml indent")
+	fs.StringVarP(&c.Out, "out", "o", "text", "output format: text,yaml,id,idlist")
+	fs.BoolVar(&c.Debug, "debug", false, "enable debug log")
+	fs.BoolVarP(&c.Quiet, "quiet", "q", false, "quiet log")
+	fs.BoolVarP(&c.Color, "color", "c", false, "colored diff")
+	fs.BoolVar(&c.DiffSuccess, "success", false, "exit with 0 even if inputs differ")
+	fs.BoolVar(&c.AllowDuplicateKey, "allowDuplicateKey", true, "allow the use of keys with the same name in the same map")
+	fs.StringVarP(&c.DiffCommand, "diffCmd", "x", "", "invoke this to get diff instead of builtin differ")
+	fs.BoolVarP(&c.Verbose, "verbose", "v", false, "enable verbose output; annotate diff type and display summary")
+
+	err := fs.Parse(os.Args)
 	if errors.Is(err, pflag.ErrHelp) {
 		return
 	}
@@ -99,7 +108,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(exitCodeFailure)
 	}
-	c.Labels, _ = fs.GetStringSlice("label")
 
 	setupLogger(os.Stderr, c.Debug, c.Quiet)
 
