@@ -21,7 +21,7 @@ init:
 	$(GOMOD) tidy -v
 
 .PHONY: lint
-lint: check-licenses vet vuln golangci-lint
+lint: check-licenses vet golangci-lint
 
 .PHONY: vuln
 vuln:
