@@ -228,10 +228,10 @@ require (
 	golang.org/x/perf v0.0.0-20250710210952-7b7c2de18447 // indirect
 	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260611141451-d61e87d5f4a3 // indirect
+	golang.org/x/telemetry v0.0.0-20260625142307-59b4966ccb57 // indirect
 	golang.org/x/text v0.38.0 // indirect
-	golang.org/x/tools v0.46.0 // indirect
-	golang.org/x/vuln v1.4.0 // indirect
+	golang.org/x/tools v0.47.0 // indirect
+	golang.org/x/vuln v1.5.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
