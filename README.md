@@ -1,5 +1,3 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/berquerant/k8s-object-diff-go)](https://goreportcard.com/report/github.com/berquerant/k8s-object-diff-go)
-
 # k8s-object-diff-go
 
 ```
