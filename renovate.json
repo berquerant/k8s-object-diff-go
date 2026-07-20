@@ -23,18 +23,5 @@
         "go"
       ]
     }
-  ],
-  "customManagers": [
-    {
-      "customType": "regex",
-      "description": "Manage go dependencies in devcontainer",
-      "managerFilePatterns": [
-        "/^.devcontainer/Dockerfile$/"
-      ],
-      "matchStrings": [
-        "RUN go install (?<depName>.*)@(?<currentValue>.*)"
-      ],
-      "datasourceTemplate": "go"
-    }
   ]
 }

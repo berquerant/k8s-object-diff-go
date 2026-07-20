@@ -1,7 +1,0 @@
-{
-  "name": "Go dev container",
-  "build": {
-    "dockerfile": "./Dockerfile",
-    "context": ".."
-  }
-}
