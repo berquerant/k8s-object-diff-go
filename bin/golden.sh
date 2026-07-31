@@ -28,6 +28,8 @@ list | while read -r target ; do
     run "$target" yaml > "${target}/out.yml"
     # for output idlist
     run "$target" idlist > "${target}/out.idlist"
+    # for output markdown
+    run "$target" markdown > "${target}/out.md"
 done
 
 echo >&2 "End golden"
