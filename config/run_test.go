@@ -1,6 +1,8 @@
 package config_test
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -8,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/berquerant/k8s-object-diff-go/config"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -85,4 +88,83 @@ func BenchmarkRun(b *testing.B) {
 			_ = c.Run(io.Discard, left, right)
 		}
 	})
+}
+
+func TestStdinInput(t *testing.T) {
+	t.Run("2 stdins", func(t *testing.T) {
+		var c config.Config
+		assert.ErrorContains(t, c.Run(io.Discard, "-", "-"), "cannot be specified for both left and right")
+	})
+
+	const (
+		manifest1 = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test
+data:
+  os: debian`
+		manifest2 = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test
+data:
+  os: ubuntu`
+	)
+	file := filepath.Join(t.TempDir(), "test.yml")
+	if !assert.Nil(t, os.WriteFile(file, []byte(manifest1), 0644)) {
+		return
+	}
+	newStdin := func() io.Reader {
+		return bytes.NewBufferString(manifest2)
+	}
+
+	for _, tc := range []struct {
+		name        string
+		left, right string
+		want        string
+	}{
+		{
+			name:  "right stdin",
+			left:  file,
+			right: "-",
+			want: fmt.Sprintf(`--- %s v1>ConfigMap>>test
++++ - v1>ConfigMap>>test
+@@ -1,6 +1,6 @@
+ apiVersion: v1
+ data:
+-  os: debian
++  os: ubuntu
+ kind: ConfigMap
+ metadata:
+   name: test
+`, file),
+		},
+		{
+			name:  "left stdin",
+			left:  "-",
+			right: file,
+			want: fmt.Sprintf(`--- - v1>ConfigMap>>test
++++ %s v1>ConfigMap>>test
+@@ -1,6 +1,6 @@
+ apiVersion: v1
+ data:
+-  os: ubuntu
++  os: debian
+ kind: ConfigMap
+ metadata:
+   name: test
+`, file),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var c config.Config
+			c.Separator = ">"
+			c.Indent = 2
+			c.Context = 3
+			c.Stdin = newStdin()
+			var got bytes.Buffer
+			assert.ErrorIs(t, c.Run(&got, tc.left, tc.right), config.ErrDiffFound)
+			assert.Equal(t, tc.want, got.String())
+		})
+	}
 }
