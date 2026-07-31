@@ -54,6 +54,29 @@ Array of
   right: "Right object (optional)"
   type: "Diff type (add or change or destroy)"
 
+## markdown
+
+  # Objdiff Summary
+
+  Left file <-> Right file
+
+  | **add** | **change** | **destroy** |
+  | :---: | :---: | :---: |
+  | x | y | z |
+  ## Diff type Object ID
+
+  <details><summary>View Diff</summary>
+  Unified diff
+  </details>
+
+or
+
+  # Objdiff Summary
+
+  Left file <-> Right file
+
+  No changes.
+
 # Exit status
 
 0 if inputs are the same.
@@ -80,7 +103,7 @@ const (
 func main() {
 	fs := pflag.NewFlagSet("main", pflag.ContinueOnError)
 	fs.Usage = func() {
-		fmt.Println(usage)
+		fmt.Printf("%s\n\n", usage)
 		fs.PrintDefaults()
 	}
 
@@ -91,7 +114,7 @@ func main() {
 	fs.IntVarP(&c.Context, "context", "C", 3, "diff context")
 	fs.StringVarP(&c.Separator, "separator", "d", ">", "object id separator")
 	fs.IntVarP(&c.Indent, "indent", "n", 2, "yaml indent")
-	fs.StringVarP(&c.Out, "out", "o", "text", "output format: text,yaml,id,idlist")
+	fs.StringVarP(&c.Out, "out", "o", "text", "output format: text,yaml,id,idlist,markdown")
 	fs.BoolVar(&c.Debug, "debug", false, "enable debug log")
 	fs.BoolVarP(&c.Quiet, "quiet", "q", false, "quiet log")
 	fs.BoolVarP(&c.Color, "color", "c", false, "colored diff")
@@ -99,6 +122,7 @@ func main() {
 	fs.BoolVar(&c.AllowDuplicateKey, "allowDuplicateKey", true, "allow the use of keys with the same name in the same map")
 	fs.StringVarP(&c.DiffCommand, "diffCmd", "x", "", "invoke this to get diff instead of builtin differ")
 	fs.BoolVarP(&c.Verbose, "verbose", "v", false, "enable verbose output; annotate diff type and display summary")
+	fs.UintVar(&c.MarkdownHeadingLevel, "markdown-heading", 1, "highest heading level in markdown")
 
 	err := fs.Parse(os.Args)
 	if errors.Is(err, pflag.ErrHelp) {

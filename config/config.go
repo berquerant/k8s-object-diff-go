@@ -10,28 +10,30 @@ import (
 )
 
 type Config struct {
-	Context           int
-	Separator         string
-	Indent            int
-	Out               string
-	Debug             bool
-	Quiet             bool
-	Color             bool
-	DiffSuccess       bool
-	AllowDuplicateKey bool
-	DiffCommand       string
-	Verbose           bool
-	Labels            []string
+	Context              int
+	Separator            string
+	Indent               int
+	Out                  string
+	Debug                bool
+	Quiet                bool
+	Color                bool
+	DiffSuccess          bool
+	AllowDuplicateKey    bool
+	DiffCommand          string
+	Verbose              bool
+	Labels               []string
+	MarkdownHeadingLevel uint
 }
 
 type OutMode string
 
 const (
-	OutModeUnknown OutMode = "unknown"
-	OutModeText    OutMode = "text"
-	OutModeYaml    OutMode = "yaml"
-	OutModeID      OutMode = "id"
-	OutModeIDList  OutMode = "idlist"
+	OutModeUnknown  OutMode = "unknown"
+	OutModeText     OutMode = "text"
+	OutModeYaml     OutMode = "yaml"
+	OutModeID       OutMode = "id"
+	OutModeIDList   OutMode = "idlist"
+	OutModeMarkdown OutMode = "markdown"
 )
 
 func (c *Config) OutMode() OutMode {
@@ -44,6 +46,8 @@ func (c *Config) OutMode() OutMode {
 		return OutModeID
 	case string(OutModeIDList):
 		return OutModeIDList
+	case string(OutModeMarkdown):
+		return OutModeMarkdown
 	default:
 		return OutModeUnknown
 	}

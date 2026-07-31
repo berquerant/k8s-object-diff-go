@@ -5,23 +5,26 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"strings"
+	"text/template"
 
 	"github.com/berquerant/k8s-object-diff-go/internal"
 )
 
 type diffPrinter struct {
-	mode         OutMode
-	pairs        []*internal.ObjectPair
-	differ       internal.Differ
-	objectDiffer internal.ObjectDiffer
-	marshaler    internal.Marshaler
-	diffContext  int
-	color        bool
-	left         string
-	right        string
-	out          io.Writer
-	verbose      bool
+	mode                 OutMode
+	pairs                []*internal.ObjectPair
+	differ               internal.Differ
+	objectDiffer         internal.ObjectDiffer
+	marshaler            internal.Marshaler
+	diffContext          int
+	color                bool
+	left                 string
+	right                string
+	out                  io.Writer
+	verbose              bool
+	markdownHeadingLevel uint
 }
 
 func (p *diffPrinter) print(ctx context.Context) error {
@@ -32,6 +35,8 @@ func (p *diffPrinter) print(ctx context.Context) error {
 		return p.printObjectIDList()
 	case OutModeYaml:
 		return p.printYamlDiff(ctx)
+	case OutModeMarkdown:
+		return p.printMarkdownDiff(ctx)
 	default:
 		return p.printTextDiff(ctx)
 	}
@@ -231,4 +236,121 @@ func (p *diffPrinter) printYamlDiff(ctx context.Context) error {
 		return ErrDiffFound
 	}
 	return nil
+}
+
+func (p *diffPrinter) printMarkdownDiff(ctx context.Context) error {
+	var (
+		heading = func(n int) string {
+			return strings.Repeat("#", n+int(p.markdownHeadingLevel))
+		}
+		diffTypeAsString = func(x internal.DiffType) string {
+			switch x {
+			case internal.DiffTypeAdd:
+				return "add"
+			case internal.DiffTypeChange:
+				return "change"
+			case internal.DiffTypeDestroy:
+				return "destroy"
+			default:
+				return "unknown"
+			}
+		}
+		summaryNoDiff = fmt.Sprintf(`%s Objdiff Summary
+
+%s <-> %s
+
+No changes.`,
+			heading(0),
+			p.left,
+			p.right,
+		)
+		summaryTmpl = fmt.Sprintf(`%s Objdiff Summary
+
+%s <-> %s
+
+| **%s** | **%s** | **%s** |
+| :---: | :---: | :---: |
+| {{ .Add }} | {{ .Change }} | {{ .Destroy }} |`,
+			heading(0),
+			"`{{ .Left }}`",
+			"`{{ .Right }}`",
+			diffTypeAsString(internal.DiffTypeAdd),
+			diffTypeAsString(internal.DiffTypeChange),
+			diffTypeAsString(internal.DiffTypeDestroy),
+		)
+		diffTmpl = fmt.Sprintf(`{{ range . }}
+%s {{ .DiffType }} %s
+
+<details><summary>View Diff</summary>
+
+%s
+
+</details>
+{{ end }}`,
+			heading(1),
+			"`{{ .ID }}`",
+			"``` diff\n{{ .Diff }}```",
+		)
+	)
+
+	type Summary struct {
+		Left, Right          string
+		Add, Change, Destroy int
+	}
+	type Item struct {
+		ID, Diff, DiffType string
+	}
+
+	var (
+		diffFound bool
+		summary   = Summary{
+			Left:  p.left,
+			Right: p.right,
+		}
+		items []Item
+	)
+	for _, x := range p.pairs {
+		slog.Debug("process pair", slog.String("id", x.ID))
+		if x.IsMissing() {
+			slog.Error("missing object", slog.String("id", x.ID))
+			continue
+		}
+		d, err := p.objectDiffer.ObjectDiff(ctx, x)
+		if err != nil {
+			return err
+		}
+		if d.Diff == "" {
+			slog.Debug("no diff", slog.String("id", x.ID))
+			continue
+		}
+		if !diffFound {
+			diffFound = true
+		}
+		switch d.Type {
+		case internal.DiffTypeAdd:
+			summary.Add++
+		case internal.DiffTypeChange:
+			summary.Change++
+		case internal.DiffTypeDestroy:
+			summary.Destroy++
+		}
+		items = append(items, Item{
+			ID:       x.ID,
+			Diff:     d.Diff,
+			DiffType: diffTypeAsString(d.Type),
+		})
+	}
+
+	if !diffFound {
+		fmt.Println(summaryNoDiff)
+		return nil
+	}
+
+	if err := template.Must(template.New("summary").Parse(summaryTmpl)).Execute(os.Stdout, summary); err != nil {
+		return err
+	}
+	if err := template.Must(template.New("diff").Parse(diffTmpl)).Execute(os.Stdout, items); err != nil {
+		return err
+	}
+	return ErrDiffFound
 }

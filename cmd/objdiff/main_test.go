@@ -93,6 +93,10 @@ func TestEndToEnd(t *testing.T) {
 					name: "idlist",
 					file: "out.idlist",
 				},
+				{
+					name: "markdown",
+					file: "out.md",
+				},
 			} {
 				t.Run(tc.name, func(t *testing.T) {
 					want, err := readAll(tc.file)

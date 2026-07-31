@@ -61,13 +61,14 @@ func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string
 			c.Context,
 			c.Color,
 		),
-		marshaler:   internal.NewYamlMarshaler(c.Indent, false),
-		color:       c.Color,
-		diffContext: c.Context,
-		left:        left,
-		right:       right,
-		out:         w,
-		verbose:     c.Verbose,
+		marshaler:            internal.NewYamlMarshaler(c.Indent, false),
+		color:                c.Color,
+		diffContext:          c.Context,
+		left:                 left,
+		right:                right,
+		out:                  w,
+		verbose:              c.Verbose,
+		markdownHeadingLevel: c.MarkdownHeadingLevel,
 	}
 
 	return printer.print(ctx)

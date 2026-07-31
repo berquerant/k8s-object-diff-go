@@ -44,6 +44,29 @@ Array of
   right: "Right object (optional)"
   type: "Diff type (add or change or destroy)"
 
+## markdown
+
+  # Objdiff Summary
+
+  Left file <-> Right file
+
+  | **add** | **change** | **destroy** |
+  | :---: | :---: | :---: |
+  | x | y | z |
+  ## Diff type Object ID
+
+  <details><summary>View Diff</summary>
+  Unified diff
+  </details>
+
+or
+
+  # Objdiff Summary
+
+  Left file <-> Right file
+
+  No changes.
+
 # Exit status
 
 0 if inputs are the same.
@@ -61,19 +84,21 @@ invokes
   diff --unified=5 --color=always --label left.yml --label right.yml LEFT_FILE RIGHT_FILE
 
 # Flags
-      --allowDuplicateKey   allow the use of keys with the same name in the same map (default true)
-  -c, --color               colored diff
-  -C, --context int         diff context (default 3)
-      --debug               enable debug log
-  -x, --diffCmd string      invoke this to get diff instead of builtin differ
-  -n, --indent int          yaml indent (default 2)
-  -L, --label strings       use label instead of file name
-  -o, --out string          output format: text,yaml,id,idlist (default "text")
-  -q, --quiet               quiet log
-  -d, --separator string    object id separator (default ">")
-      --success             exit with 0 even if inputs differ
-  -v, --verbose             enable verbose output; annotate diff type and display summary
-      --version             print objdiff version
+
+      --allowDuplicateKey       allow the use of keys with the same name in the same map (default true)
+  -c, --color                   colored diff
+  -C, --context int             diff context (default 3)
+      --debug                   enable debug log
+  -x, --diffCmd string          invoke this to get diff instead of builtin differ
+  -n, --indent int              yaml indent (default 2)
+  -L, --label strings           use label instead of file name
+      --markdown-heading uint   highest heading level in markdown (default 1)
+  -o, --out string              output format: text,yaml,id,idlist,markdown (default "text")
+  -q, --quiet                   quiet log
+  -d, --separator string        object id separator (default ">")
+      --success                 exit with 0 even if inputs differ
+  -v, --verbose                 enable verbose output; annotate diff type and display summary
+      --version                 print objdiff version
 ```
 
 ## Example

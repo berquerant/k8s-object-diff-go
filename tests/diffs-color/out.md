@@ -1,0 +1,97 @@
+# Objdiff Summary
+
+`tests/diffs-color/left.yml` <-> `tests/diffs-color/right.yml`
+
+| **add** | **change** | **destroy** |
+| :---: | :---: | :---: |
+| 1 | 2 | 1 |
+## change `apps/v1>Deployment>>nginx-deployment`
+
+<details><summary>View Diff</summary>
+
+``` diff
+[31m--- [33mtests/diffs-color/left.yml apps/v1>Deployment>>nginx-deployment[0m[0m
+[32m+++ [33mtests/diffs-color/right.yml apps/v1>Deployment>>nginx-deployment[0m[0m
+[36m@@ -5,7 +5,7 @@
+[0m   labels:
+     app: nginx
+ spec:
+[31m-  replicas: 1[0m
+[32m+  replicas: 3[0m
+   selector:
+     matchLabels:
+       app: nginx
+[36m@@ -16,6 +16,6 @@
+[0m     spec:
+       containers:
+       - name: nginx
+[31m-        image: nginx:1.14.3[0m
+[32m+        image: nginx:1.14.2[0m
+         ports:
+         - containerPort: 80
+```
+
+</details>
+
+## change `v1>Pod>default>nginx-common`
+
+<details><summary>View Diff</summary>
+
+``` diff
+[31m--- [33mtests/diffs-color/left.yml v1>Pod>default>nginx-common[0m[0m
+[32m+++ [33mtests/diffs-color/right.yml v1>Pod>default>nginx-common[0m[0m
+[36m@@ -8,4 +8,4 @@
+[0m   - name: nginx
+     image: nginx:1.14.2
+     ports:
+[31m-    - containerPort: 80[0m
+[32m+    - containerPort: 81[0m
+```
+
+</details>
+
+## destroy `v1>Pod>default>nginx-left`
+
+<details><summary>View Diff</summary>
+
+``` diff
+[31m--- [33mtests/diffs-color/left.yml v1>Pod>default>nginx-left[0m[0m
+[32m+++ [33mtests/diffs-color/right.yml v1>Pod>default>nginx-left[0m[0m
+[36m@@ -1,11 +0,0 @@
+[0m[31m-apiVersion: v1[0m
+[31m-kind: Pod[0m
+[31m-metadata:[0m
+[31m-  name: nginx-left[0m
+[31m-  namespace: default[0m
+[31m-spec:[0m
+[31m-  containers:[0m
+[31m-  - name: nginx[0m
+[31m-    image: nginx:1.14.2[0m
+[31m-    ports:[0m
+[31m-    - containerPort: 80[0m
+```
+
+</details>
+
+## add `v1>Pod>default>nginx-right`
+
+<details><summary>View Diff</summary>
+
+``` diff
+[31m--- [33mtests/diffs-color/left.yml v1>Pod>default>nginx-right[0m[0m
+[32m+++ [33mtests/diffs-color/right.yml v1>Pod>default>nginx-right[0m[0m
+[36m@@ -0,0 +1,11 @@
+[0m[32m+apiVersion: v1[0m
+[32m+kind: Pod[0m
+[32m+metadata:[0m
+[32m+  name: nginx-right[0m
+[32m+  namespace: default[0m
+[32m+spec:[0m
+[32m+  containers:[0m
+[32m+  - name: nginx[0m
+[32m+    image: nginx:1.14.2[0m
+[32m+    ports:[0m
+[32m+    - containerPort: 80[0m
+```
+
+</details>
