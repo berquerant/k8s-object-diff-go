@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 
@@ -23,6 +24,7 @@ type Config struct {
 	Verbose              bool
 	Labels               []string
 	MarkdownHeadingLevel uint
+	Stdin                io.Reader
 }
 
 type OutMode string

@@ -18,6 +18,8 @@ const usage = `objdiff - k8s object diff by object id
 
   objdiff [flags] LEFT_FILE RIGHT_FILE
 
+Either LEFT_FILE or RIGHT_FILE can be set to "-". Here, "-" represents stdin.
+
 # Object ID
 
 A unique ID for a k8s object.
@@ -110,6 +112,7 @@ func main() {
 	fs.Bool("version", false, "print objdiff version")
 
 	var c config.Config
+	c.Stdin = os.Stdin
 	fs.StringSliceVarP(&c.Labels, "label", "L", nil, "use label instead of file name")
 	fs.IntVarP(&c.Context, "context", "C", 3, "diff context")
 	fs.StringVarP(&c.Separator, "separator", "d", ">", "object id separator")

@@ -25,12 +25,16 @@ func (c *Config) Run(w io.Writer, left, right string) error {
 }
 
 func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string) error {
+	if left == right && left == stdinFilename {
+		return fmt.Errorf("'%s' cannot be specified for both left and right", stdinFilename)
+	}
+
 	marshaler := internal.NewYamlMarshaler(c.Indent, true)
-	leftMap, err := loadObjects(ctx, marshaler, left, c.Separator, c.AllowDuplicateKey)
+	leftMap, err := loadObjects(ctx, marshaler, c.Stdin, left, c.Separator, c.AllowDuplicateKey)
 	if err != nil {
 		return fmt.Errorf("left file: %s: %w", left, err)
 	}
-	rightMap, err := loadObjects(ctx, marshaler, right, c.Separator, c.AllowDuplicateKey)
+	rightMap, err := loadObjects(ctx, marshaler, c.Stdin, right, c.Separator, c.AllowDuplicateKey)
 	if err != nil {
 		return fmt.Errorf("right file: %s: %w", right, err)
 	}
@@ -74,17 +78,29 @@ func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string
 	return printer.print(ctx)
 }
 
-func loadObjects(ctx context.Context, marshaler internal.Marshaler, file, sep string, allowDuplicateMapKey bool) (*internal.ObjectMap, error) {
-	slog.Debug("loadObjects", slog.String("file", file))
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open %s: %w", file, err)
-	}
-	defer func() {
-		_ = f.Close()
-	}()
+const (
+	stdinFilename = "-"
+)
 
-	objects, err := internal.LoadObjects(ctx, f, marshaler, allowDuplicateMapKey)
+func loadObjects(ctx context.Context, marshaler internal.Marshaler, stdin io.Reader, file, sep string, allowDuplicateMapKey bool) (*internal.ObjectMap, error) {
+	slog.Debug("loadObjects", slog.String("file", file))
+
+	var r io.Reader
+	switch file {
+	case stdinFilename:
+		r = stdin
+	default:
+		f, err := os.Open(file)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open %s: %w", file, err)
+		}
+		defer func() {
+			_ = f.Close()
+		}()
+		r = f
+	}
+
+	objects, err := internal.LoadObjects(ctx, r, marshaler, allowDuplicateMapKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load objects from %s: %w", file, err)
 	}

@@ -8,6 +8,8 @@ objdiff - k8s object diff by object id
 
   objdiff [flags] LEFT_FILE RIGHT_FILE
 
+Either LEFT_FILE or RIGHT_FILE can be set to "-". Here, "-" represents stdin.
+
 # Object ID
 
 A unique ID for a k8s object.
