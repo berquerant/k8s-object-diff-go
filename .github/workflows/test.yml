@@ -42,3 +42,11 @@ jobs:
         run: make test
       - name: Bench
         run: make bench
+
+  govulncheck:
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: berquerant/govulncheck-action@8ac2a2766111f53ca36bc684d981aadf6374d465 # v1.0.0
