@@ -49,4 +49,4 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: berquerant/govulncheck-action@8ac2a2766111f53ca36bc684d981aadf6374d465 # v1.0.0
+      - uses: berquerant/govulncheck-action@c52534f3df61877ade963c98a5fcdd07a5662f0e # v1.0.1
