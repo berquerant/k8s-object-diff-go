@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"os"
 	"strings"
 	"text/template"
 
@@ -82,6 +81,50 @@ func (p *diffPrinter) diffTypeSummary(add, change, destroy int) string {
 	)
 }
 
+// collectDiffs iterates over all pairs, calls ObjectDiff on each, and returns
+// only the pairs that have a non-empty diff. Missing pairs are logged and skipped.
+func (p *diffPrinter) collectDiffs(ctx context.Context) ([]*internal.ObjectDiff, error) {
+	var result []*internal.ObjectDiff
+	for _, x := range p.pairs {
+		slog.Debug("process pair", slog.String("id", x.ID))
+		if x.IsMissing() {
+			slog.Error("missing object", slog.String("id", x.ID))
+			continue
+		}
+		d, err := p.objectDiffer.ObjectDiff(ctx, x)
+		if err != nil {
+			return nil, err
+		}
+		if d.Diff == "" {
+			slog.Debug("no diff", slog.String("id", x.ID))
+			continue
+		}
+		result = append(result, d)
+	}
+	return result, nil
+}
+
+// diffStats holds counts of each diff type.
+type diffStats struct {
+	Add, Change, Destroy int
+}
+
+// countDiffStats aggregates add/change/destroy counts from a slice of ObjectDiffs.
+func countDiffStats(diffs []*internal.ObjectDiff) diffStats {
+	var s diffStats
+	for _, d := range diffs {
+		switch d.Type {
+		case internal.DiffTypeAdd:
+			s.Add++
+		case internal.DiffTypeChange:
+			s.Change++
+		case internal.DiffTypeDestroy:
+			s.Destroy++
+		}
+	}
+	return s
+}
+
 func (p *diffPrinter) printObjectIDList() error {
 	xs := make([]string, len(p.pairs))
 	for i, x := range p.pairs {
@@ -141,73 +184,37 @@ func (p *diffPrinter) printObjectIDDiff(ctx context.Context) error {
 }
 
 func (p *diffPrinter) printTextDiff(ctx context.Context) error {
-	var (
-		diffFound            bool
-		add, change, destroy int
-	)
-	for _, x := range p.pairs {
-		slog.Debug("process pair", slog.String("id", x.ID))
-		if x.IsMissing() {
-			slog.Error("missing object", slog.String("id", x.ID))
-			continue
-		}
-		d, err := p.objectDiffer.ObjectDiff(ctx, x)
-		if err != nil {
-			return err
-		}
-		if d.Diff == "" {
-			slog.Debug("no diff", slog.String("id", x.ID))
-			continue
-		}
-		if !diffFound {
-			diffFound = true
-		}
-		switch d.Type {
-		case internal.DiffTypeAdd:
-			add++
-		case internal.DiffTypeChange:
-			change++
-		case internal.DiffTypeDestroy:
-			destroy++
-		}
+	diffs, err := p.collectDiffs(ctx)
+	if err != nil {
+		return err
+	}
+	stats := countDiffStats(diffs)
+	for _, d := range diffs {
 		if p.verbose {
-			_, _ = fmt.Fprintln(p.out, p.diffTypeString(x.ID, d.Type))
+			_, _ = fmt.Fprintln(p.out, p.diffTypeString(d.Pair.ID, d.Type))
 		}
 		_, _ = fmt.Fprint(p.out, d.Diff)
 	}
 	if p.verbose {
-		_, _ = fmt.Fprintf(p.out, "\n%s\n", p.diffTypeSummary(add, change, destroy))
+		_, _ = fmt.Fprintf(p.out, "\n%s\n", p.diffTypeSummary(stats.Add, stats.Change, stats.Destroy))
 	}
-
-	if diffFound {
-		return ErrDiffFound
+	if len(diffs) == 0 {
+		return nil
 	}
-	return nil
+	return ErrDiffFound
 }
 
 func (p *diffPrinter) printYamlDiff(ctx context.Context) error {
-	var (
-		diffFound bool
-		result    []any
-	)
+	diffs, err := p.collectDiffs(ctx)
+	if err != nil {
+		return err
+	}
+	if len(diffs) == 0 {
+		return nil
+	}
 
-	for _, x := range p.pairs {
-		slog.Debug("process pair", slog.String("id", x.ID))
-		if x.IsMissing() {
-			slog.Error("missing object", slog.String("id", x.ID))
-			continue
-		}
-		d, err := p.objectDiffer.ObjectDiff(ctx, x)
-		if err != nil {
-			return err
-		}
-		if d.Diff == "" {
-			slog.Debug("no diff", slog.String("id", x.ID))
-			continue
-		}
-		if !diffFound {
-			diffFound = true
-		}
+	result := make([]any, 0, len(diffs))
+	for _, d := range diffs {
 		y := map[string]any{
 			"id":   d.Pair.ID,
 			"diff": d.Diff,
@@ -222,20 +229,12 @@ func (p *diffPrinter) printYamlDiff(ctx context.Context) error {
 		result = append(result, y)
 	}
 
-	if len(result) == 0 {
-		return nil
-	}
-
 	b, err := p.marshaler.Marshal(ctx, result)
 	if err != nil {
 		return err
 	}
 	_, _ = fmt.Fprint(p.out, string(b))
-
-	if diffFound {
-		return ErrDiffFound
-	}
-	return nil
+	return ErrDiffFound
 }
 
 func (p *diffPrinter) printMarkdownDiff(ctx context.Context) error {
@@ -301,55 +300,36 @@ No changes.`,
 		ID, Diff, DiffType string
 	}
 
-	var (
-		diffFound bool
-		summary   = Summary{
-			Left:  p.left,
-			Right: p.right,
-		}
-		items []Item
-	)
-	for _, x := range p.pairs {
-		slog.Debug("process pair", slog.String("id", x.ID))
-		if x.IsMissing() {
-			slog.Error("missing object", slog.String("id", x.ID))
-			continue
-		}
-		d, err := p.objectDiffer.ObjectDiff(ctx, x)
-		if err != nil {
-			return err
-		}
-		if d.Diff == "" {
-			slog.Debug("no diff", slog.String("id", x.ID))
-			continue
-		}
-		if !diffFound {
-			diffFound = true
-		}
-		switch d.Type {
-		case internal.DiffTypeAdd:
-			summary.Add++
-		case internal.DiffTypeChange:
-			summary.Change++
-		case internal.DiffTypeDestroy:
-			summary.Destroy++
-		}
+	diffs, err := p.collectDiffs(ctx)
+	if err != nil {
+		return err
+	}
+	if len(diffs) == 0 {
+		_, _ = fmt.Fprintln(p.out, summaryNoDiff)
+		return nil
+	}
+
+	stats := countDiffStats(diffs)
+	summary := Summary{
+		Left:    p.left,
+		Right:   p.right,
+		Add:     stats.Add,
+		Change:  stats.Change,
+		Destroy: stats.Destroy,
+	}
+	items := make([]Item, 0, len(diffs))
+	for _, d := range diffs {
 		items = append(items, Item{
-			ID:       x.ID,
+			ID:       d.Pair.ID,
 			Diff:     d.Diff,
 			DiffType: diffTypeAsString(d.Type),
 		})
 	}
 
-	if !diffFound {
-		fmt.Println(summaryNoDiff)
-		return nil
-	}
-
-	if err := template.Must(template.New("summary").Parse(summaryTmpl)).Execute(os.Stdout, summary); err != nil {
+	if err := template.Must(template.New("summary").Parse(summaryTmpl)).Execute(p.out, summary); err != nil {
 		return err
 	}
-	if err := template.Must(template.New("diff").Parse(diffTmpl)).Execute(os.Stdout, items); err != nil {
+	if err := template.Must(template.New("diff").Parse(diffTmpl)).Execute(p.out, items); err != nil {
 		return err
 	}
 	return ErrDiffFound
