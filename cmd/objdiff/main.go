@@ -128,6 +128,7 @@ func main() {
 	fs.UintVar(&c.MarkdownHeadingLevel, "markdown-heading", 1, "highest heading level in markdown")
 	fs.StringArrayVarP(&c.IgnoreMatchingLines, "ignore-matching-lines", "I", nil, "ignore lines matching regexp (may be specified multiple times)")
 	fs.StringArrayVarP(&c.IgnoreFields, "ignore-field", "F", nil, "ignore field by path or yq expression (may be specified multiple times)")
+	fs.StringArrayVar(&c.IgnoreLabels, "ignore-label", nil, "ignore label by key (may be specified multiple times)")
 
 	err := fs.Parse(os.Args)
 	if errors.Is(err, pflag.ErrHelp) {

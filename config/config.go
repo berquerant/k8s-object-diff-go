@@ -27,6 +27,7 @@ type Config struct {
 	Stdin                io.Reader
 	IgnoreMatchingLines  []string
 	IgnoreFields         []string
+	IgnoreLabels         []string
 }
 
 type OutMode string

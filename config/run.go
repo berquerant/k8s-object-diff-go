@@ -34,9 +34,15 @@ func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string
 		return fmt.Errorf("ignore-matching-lines: %w", err)
 	}
 
-	fieldFilter := internal.NewFieldFilter(c.IgnoreFields)
+	var yqFilters []*internal.YqFilter
+	if f := internal.NewFieldFilter(c.IgnoreFields); f != nil {
+		yqFilters = append(yqFilters, f)
+	}
+	if f := internal.NewLabelFilter(c.IgnoreLabels); f != nil {
+		yqFilters = append(yqFilters, f)
+	}
 
-	loader := newObjectLoader(c, lineFilter, fieldFilter)
+	loader := newObjectLoader(c, lineFilter, yqFilters)
 	leftMap, err := loader.load(ctx, left)
 	if err != nil {
 		return fmt.Errorf("left file: %s: %w", left, err)
@@ -95,17 +101,17 @@ type objectLoader struct {
 	sep                  string
 	allowDuplicateMapKey bool
 	lineFilter           *internal.LineFilter
-	fieldFilter          *internal.FieldFilter
+	yqFilters            []*internal.YqFilter
 }
 
-func newObjectLoader(c *Config, lineFilter *internal.LineFilter, fieldFilter *internal.FieldFilter) *objectLoader {
+func newObjectLoader(c *Config, lineFilter *internal.LineFilter, yqFilters []*internal.YqFilter) *objectLoader {
 	return &objectLoader{
 		marshaler:            internal.NewYamlMarshaler(c.Indent, true),
 		stdin:                c.Stdin,
 		sep:                  c.Separator,
 		allowDuplicateMapKey: c.AllowDuplicateKey,
 		lineFilter:           lineFilter,
-		fieldFilter:          fieldFilter,
+		yqFilters:            yqFilters,
 	}
 }
 
@@ -136,11 +142,13 @@ func (l *objectLoader) load(ctx context.Context, file string) (*internal.ObjectM
 	objectMap := internal.NewObjectMap(l.sep)
 	for _, x := range objects {
 		x.Body = l.lineFilter.Filter(x.Body)
-		filteredBody, err := l.fieldFilter.FilterBody(x.Body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to filter fields in %s: %w", file, err)
+		for _, f := range l.yqFilters {
+			filteredBody, err := f.FilterBody(x.Body)
+			if err != nil {
+				return nil, fmt.Errorf("failed to filter body in %s: %w", file, err)
+			}
+			x.Body = filteredBody
 		}
-		x.Body = filteredBody
 
 		slog.Debug("add object", slog.String("file", file), slog.String("id", x.Header.IntoID(l.sep)))
 		if objectMap.Add(x) {
