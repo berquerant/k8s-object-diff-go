@@ -30,6 +30,7 @@ type Config struct {
 	IgnoreLabels         []string
 	IgnoreAnnotations    []string
 	IgnoreManagedFields  bool
+	IgnoreStatus         bool
 }
 
 type OutMode string

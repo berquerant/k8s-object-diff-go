@@ -49,6 +49,11 @@ func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string
 			yqFilters = append(yqFilters, f)
 		}
 	}
+	if c.IgnoreStatus {
+		if f := internal.NewFieldFilter([]string{"status"}); f != nil {
+			yqFilters = append(yqFilters, f)
+		}
+	}
 
 	loader := newObjectLoader(c, lineFilter, yqFilters)
 	leftMap, err := loader.load(ctx, left)
