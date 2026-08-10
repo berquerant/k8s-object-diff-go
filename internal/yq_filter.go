@@ -63,6 +63,19 @@ func NewLabelFilter(labelKeys []string) *YqFilter {
 	return NewYqFilter(exprs)
 }
 
+// NewAnnotationFilter creates a [YqFilter] for removing annotation keys across metadata and nested templates.
+func NewAnnotationFilter(annotationKeys []string) *YqFilter {
+	if len(annotationKeys) == 0 {
+		return nil
+	}
+	exprs := make([]string, len(annotationKeys))
+	for i, k := range annotationKeys {
+		k = strings.TrimSpace(k)
+		exprs[i] = fmt.Sprintf(`del(.. | .annotations?."%s"?)`, escapeYqString(k))
+	}
+	return NewYqFilter(exprs)
+}
+
 // FilterBody evaluates the yq expression on the given YAML string and returns the filtered YAML string.
 func (f *YqFilter) FilterBody(body string) (string, error) {
 	if f == nil || f.expression == "" || strings.TrimSpace(body) == "" {

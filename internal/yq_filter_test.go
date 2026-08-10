@@ -25,6 +25,9 @@ metadata:
   labels:
     app: nginx
     buildId: "123"
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: "{}"
+    note: "important"
 spec:
   replicas: 3
   template:
@@ -32,6 +35,8 @@ spec:
       labels:
         app: nginx
         buildId: "123"
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: "{}"
 status:
   availableReplicas: 3
 `
@@ -53,5 +58,14 @@ status:
 		require.NoError(t, err)
 		assert.NotContains(t, res, "buildId")
 		assert.Contains(t, res, "app: nginx")
+	})
+
+	t.Run("AnnotationFilter", func(t *testing.T) {
+		f := internal.NewAnnotationFilter([]string{"kubectl.kubernetes.io/last-applied-configuration"})
+		require.NotNil(t, f)
+		res, err := f.FilterBody(inputYAML)
+		require.NoError(t, err)
+		assert.NotContains(t, res, "last-applied-configuration")
+		assert.Contains(t, res, "note: \"important\"")
 	})
 }

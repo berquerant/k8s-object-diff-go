@@ -28,6 +28,7 @@ type Config struct {
 	IgnoreMatchingLines  []string
 	IgnoreFields         []string
 	IgnoreLabels         []string
+	IgnoreAnnotations    []string
 }
 
 type OutMode string
