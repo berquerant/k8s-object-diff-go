@@ -29,12 +29,17 @@ func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string
 		return fmt.Errorf("'%s' cannot be specified for both left and right", stdinFilename)
 	}
 
+	lineFilter, err := internal.NewLineFilter(c.IgnoreMatchingLines)
+	if err != nil {
+		return fmt.Errorf("ignore-matching-lines: %w", err)
+	}
+
 	marshaler := internal.NewYamlMarshaler(c.Indent, true)
-	leftMap, err := loadObjects(ctx, marshaler, c.Stdin, left, c.Separator, c.AllowDuplicateKey)
+	leftMap, err := loadObjects(ctx, marshaler, c.Stdin, left, c.Separator, c.AllowDuplicateKey, lineFilter)
 	if err != nil {
 		return fmt.Errorf("left file: %s: %w", left, err)
 	}
-	rightMap, err := loadObjects(ctx, marshaler, c.Stdin, right, c.Separator, c.AllowDuplicateKey)
+	rightMap, err := loadObjects(ctx, marshaler, c.Stdin, right, c.Separator, c.AllowDuplicateKey, lineFilter)
 	if err != nil {
 		return fmt.Errorf("right file: %s: %w", right, err)
 	}
@@ -82,7 +87,7 @@ const (
 	stdinFilename = "-"
 )
 
-func loadObjects(ctx context.Context, marshaler internal.Marshaler, stdin io.Reader, file, sep string, allowDuplicateMapKey bool) (*internal.ObjectMap, error) {
+func loadObjects(ctx context.Context, marshaler internal.Marshaler, stdin io.Reader, file, sep string, allowDuplicateMapKey bool, lineFilter *internal.LineFilter) (*internal.ObjectMap, error) {
 	slog.Debug("loadObjects", slog.String("file", file))
 
 	var r io.Reader
@@ -108,6 +113,7 @@ func loadObjects(ctx context.Context, marshaler internal.Marshaler, stdin io.Rea
 
 	objectMap := internal.NewObjectMap(sep)
 	for _, x := range objects {
+		x.Body = lineFilter.Filter(x.Body)
 		slog.Debug("add object", slog.String("file", file), slog.String("id", x.Header.IntoID(sep)))
 		if objectMap.Add(x) {
 			slog.Warn("duplicated object",

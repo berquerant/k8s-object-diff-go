@@ -126,6 +126,7 @@ func main() {
 	fs.StringVarP(&c.DiffCommand, "diffCmd", "x", "", "invoke this to get diff instead of builtin differ")
 	fs.BoolVarP(&c.Verbose, "verbose", "v", false, "enable verbose output; annotate diff type and display summary")
 	fs.UintVar(&c.MarkdownHeadingLevel, "markdown-heading", 1, "highest heading level in markdown")
+	fs.StringArrayVarP(&c.IgnoreMatchingLines, "ignore-matching-lines", "I", nil, "ignore lines matching regexp (may be specified multiple times)")
 
 	err := fs.Parse(os.Args)
 	if errors.Is(err, pflag.ErrHelp) {

@@ -25,6 +25,7 @@ type Config struct {
 	Labels               []string
 	MarkdownHeadingLevel uint
 	Stdin                io.Reader
+	IgnoreMatchingLines  []string
 }
 
 type OutMode string
