@@ -29,6 +29,7 @@ type Config struct {
 	IgnoreFields         []string
 	IgnoreLabels         []string
 	IgnoreAnnotations    []string
+	IgnoreManagedFields  bool
 }
 
 type OutMode string

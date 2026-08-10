@@ -44,6 +44,11 @@ func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string
 	if f := internal.NewAnnotationFilter(c.IgnoreAnnotations); f != nil {
 		yqFilters = append(yqFilters, f)
 	}
+	if c.IgnoreManagedFields {
+		if f := internal.NewFieldFilter([]string{"metadata.managedFields"}); f != nil {
+			yqFilters = append(yqFilters, f)
+		}
+	}
 
 	loader := newObjectLoader(c, lineFilter, yqFilters)
 	leftMap, err := loader.load(ctx, left)

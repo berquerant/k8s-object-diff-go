@@ -130,6 +130,7 @@ func main() {
 	fs.StringArrayVarP(&c.IgnoreFields, "ignore-field", "F", nil, "ignore field by path or yq expression (may be specified multiple times)")
 	fs.StringArrayVar(&c.IgnoreLabels, "ignore-label", nil, "ignore label by key (may be specified multiple times)")
 	fs.StringArrayVar(&c.IgnoreAnnotations, "ignore-annotation", nil, "ignore annotation by key (may be specified multiple times)")
+	fs.BoolVar(&c.IgnoreManagedFields, "ignore-managed-fields", false, "ignore metadata.managedFields")
 
 	err := fs.Parse(os.Args)
 	if errors.Is(err, pflag.ErrHelp) {
