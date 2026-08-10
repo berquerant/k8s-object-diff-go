@@ -29,12 +29,38 @@ func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string
 		return fmt.Errorf("'%s' cannot be specified for both left and right", stdinFilename)
 	}
 
-	marshaler := internal.NewYamlMarshaler(c.Indent, true)
-	leftMap, err := loadObjects(ctx, marshaler, c.Stdin, left, c.Separator, c.AllowDuplicateKey)
+	lineFilter, err := internal.NewLineFilter(c.IgnoreMatchingLines)
+	if err != nil {
+		return fmt.Errorf("ignore-matching-lines: %w", err)
+	}
+
+	var yqFilters []*internal.YqFilter
+	if f := internal.NewFieldFilter(c.IgnoreFields); f != nil {
+		yqFilters = append(yqFilters, f)
+	}
+	if f := internal.NewLabelFilter(c.IgnoreLabels); f != nil {
+		yqFilters = append(yqFilters, f)
+	}
+	if f := internal.NewAnnotationFilter(c.IgnoreAnnotations); f != nil {
+		yqFilters = append(yqFilters, f)
+	}
+	if c.IgnoreManagedFields {
+		if f := internal.NewFieldFilter([]string{"metadata.managedFields"}); f != nil {
+			yqFilters = append(yqFilters, f)
+		}
+	}
+	if c.IgnoreStatus {
+		if f := internal.NewFieldFilter([]string{"status"}); f != nil {
+			yqFilters = append(yqFilters, f)
+		}
+	}
+
+	loader := newObjectLoader(c, lineFilter, yqFilters)
+	leftMap, err := loader.load(ctx, left)
 	if err != nil {
 		return fmt.Errorf("left file: %s: %w", left, err)
 	}
-	rightMap, err := loadObjects(ctx, marshaler, c.Stdin, right, c.Separator, c.AllowDuplicateKey)
+	rightMap, err := loader.load(ctx, right)
 	if err != nil {
 		return fmt.Errorf("right file: %s: %w", right, err)
 	}
@@ -82,13 +108,33 @@ const (
 	stdinFilename = "-"
 )
 
-func loadObjects(ctx context.Context, marshaler internal.Marshaler, stdin io.Reader, file, sep string, allowDuplicateMapKey bool) (*internal.ObjectMap, error) {
+type objectLoader struct {
+	marshaler            internal.Marshaler
+	stdin                io.Reader
+	sep                  string
+	allowDuplicateMapKey bool
+	lineFilter           *internal.LineFilter
+	yqFilters            []*internal.YqFilter
+}
+
+func newObjectLoader(c *Config, lineFilter *internal.LineFilter, yqFilters []*internal.YqFilter) *objectLoader {
+	return &objectLoader{
+		marshaler:            internal.NewYamlMarshaler(c.Indent, true),
+		stdin:                c.Stdin,
+		sep:                  c.Separator,
+		allowDuplicateMapKey: c.AllowDuplicateKey,
+		lineFilter:           lineFilter,
+		yqFilters:            yqFilters,
+	}
+}
+
+func (l *objectLoader) load(ctx context.Context, file string) (*internal.ObjectMap, error) {
 	slog.Debug("loadObjects", slog.String("file", file))
 
 	var r io.Reader
 	switch file {
 	case stdinFilename:
-		r = stdin
+		r = l.stdin
 	default:
 		f, err := os.Open(file)
 		if err != nil {
@@ -100,18 +146,27 @@ func loadObjects(ctx context.Context, marshaler internal.Marshaler, stdin io.Rea
 		r = f
 	}
 
-	objects, err := internal.LoadObjects(ctx, r, marshaler, allowDuplicateMapKey)
+	objects, err := internal.LoadObjects(ctx, r, l.marshaler, l.allowDuplicateMapKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load objects from %s: %w", file, err)
 	}
 	slog.Debug("loaded objects", slog.String("file", file), slog.Int("len", len(objects)))
 
-	objectMap := internal.NewObjectMap(sep)
+	objectMap := internal.NewObjectMap(l.sep)
 	for _, x := range objects {
-		slog.Debug("add object", slog.String("file", file), slog.String("id", x.Header.IntoID(sep)))
+		x.Body = l.lineFilter.Filter(x.Body)
+		for _, f := range l.yqFilters {
+			filteredBody, err := f.FilterBody(x.Body)
+			if err != nil {
+				return nil, fmt.Errorf("failed to filter body in %s: %w", file, err)
+			}
+			x.Body = filteredBody
+		}
+
+		slog.Debug("add object", slog.String("file", file), slog.String("id", x.Header.IntoID(l.sep)))
 		if objectMap.Add(x) {
 			slog.Warn("duplicated object",
-				slog.String("id", x.Header.IntoID(sep)),
+				slog.String("id", x.Header.IntoID(l.sep)),
 				slog.String("file", file),
 			)
 		}

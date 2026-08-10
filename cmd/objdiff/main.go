@@ -126,6 +126,12 @@ func main() {
 	fs.StringVarP(&c.DiffCommand, "diffCmd", "x", "", "invoke this to get diff instead of builtin differ")
 	fs.BoolVarP(&c.Verbose, "verbose", "v", false, "enable verbose output; annotate diff type and display summary")
 	fs.UintVar(&c.MarkdownHeadingLevel, "markdown-heading", 1, "highest heading level in markdown")
+	fs.StringArrayVarP(&c.IgnoreMatchingLines, "ignore-matching-lines", "I", nil, "ignore lines matching regexp (may be specified multiple times)")
+	fs.StringArrayVarP(&c.IgnoreFields, "ignore-field", "F", nil, "ignore field by path or yq expression (may be specified multiple times)")
+	fs.StringArrayVar(&c.IgnoreLabels, "ignore-label", nil, "ignore label by key (may be specified multiple times)")
+	fs.StringArrayVar(&c.IgnoreAnnotations, "ignore-annotation", nil, "ignore annotation by key (may be specified multiple times)")
+	fs.BoolVar(&c.IgnoreManagedFields, "ignore-managed-fields", false, "ignore metadata.managedFields")
+	fs.BoolVar(&c.IgnoreStatus, "ignore-status", false, "ignore status field")
 
 	err := fs.Parse(os.Args)
 	if errors.Is(err, pflag.ErrHelp) {

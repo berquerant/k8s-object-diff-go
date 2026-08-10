@@ -1,0 +1,11 @@
+--- tests/diff-ignore-fields/left.yml apps/v1>Deployment>>nginx-deployment
++++ tests/diff-ignore-fields/right.yml apps/v1>Deployment>>nginx-deployment
+@@ -5,7 +5,7 @@
+   labels:
+     app: nginx
+ spec:
+-  replicas: 3
++  replicas: 1
+   selector:
+     matchLabels:
+       app: nginx
