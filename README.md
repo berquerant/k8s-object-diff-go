@@ -87,20 +87,26 @@ invokes
 
 # Flags
 
-      --allowDuplicateKey       allow the use of keys with the same name in the same map (default true)
-  -c, --color                   colored diff
-  -C, --context int             diff context (default 3)
-      --debug                   enable debug log
-  -x, --diffCmd string          invoke this to get diff instead of builtin differ
-  -n, --indent int              yaml indent (default 2)
-  -L, --label strings           use label instead of file name
-      --markdown-heading uint   highest heading level in markdown (default 1)
-  -o, --out string              output format: text,yaml,id,idlist,markdown (default "text")
-  -q, --quiet                   quiet log
-  -d, --separator string        object id separator (default ">")
-      --success                 exit with 0 even if inputs differ
-  -v, --verbose                 enable verbose output; annotate diff type and display summary
-      --version                 print objdiff version
+      --allowDuplicateKey                   allow the use of keys with the same name in the same map (default true)
+  -c, --color                               colored diff
+  -C, --context int                         diff context (default 3)
+      --debug                               enable debug log
+  -x, --diffCmd string                      invoke this to get diff instead of builtin differ
+      --ignore-annotation stringArray       ignore annotation by key (may be specified multiple times)
+  -F, --ignore-field stringArray            ignore field by path or yq expression (may be specified multiple times)
+      --ignore-label stringArray            ignore label by key (may be specified multiple times)
+      --ignore-managed-fields               ignore metadata.managedFields
+  -I, --ignore-matching-lines stringArray   ignore lines matching regexp (may be specified multiple times)
+      --ignore-status                       ignore status field
+  -n, --indent int                          yaml indent (default 2)
+  -L, --label strings                       use label instead of file name
+      --markdown-heading uint               highest heading level in markdown (default 1)
+  -o, --out string                          output format: text,yaml,id,idlist,markdown (default "text")
+  -q, --quiet                               quiet log
+  -d, --separator string                    object id separator (default ">")
+      --success                             exit with 0 even if inputs differ
+  -v, --verbose                             enable verbose output; annotate diff type and display summary
+      --version                             print objdiff version
 ```
 
 ## Example
