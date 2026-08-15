@@ -28,8 +28,8 @@ Standard text diff tools compare files line-by-line, which often yields messy or
   - `id`: Diff formatted at the Object ID level.
   - `idlist`: Lists all Object IDs found in the inputs.
   - `markdown`: Rich Markdown output with collapsible `<details>` blocks for diffs and summary tables, suitable for PR comments or CI reports.
-- **Custom Differ Integration (`-x / --diffCmd` or `DIFFCMD`)**: Uses a built-in diff engine based on `sergi/go-diff` by default, but allows executing external diff tools (e.g. `diff`).
-- **Flexible Input Handling**: Supports stdin (`-`), custom Object ID separators (`-d`), custom context line count (`-C`), label overrides (`-L`), and tolerates duplicate map keys (`--allowDuplicateKey`).
+- **Custom Differ Integration (`-x / --diff-cmd` or `DIFFCMD`)**: Uses a built-in diff engine based on `sergi/go-diff` by default, but allows executing external diff tools (e.g. `diff`).
+- **Flexible Input Handling**: Supports stdin (`-`), custom Object ID separators (`-d`), custom context line count (`-C`), label overrides (`-L`), and tolerates duplicate map keys (`--allow-duplicate-key`).
 - **Standard Exit Codes**: Exits with `0` when inputs are identical, `1` when diffs exist (unless `--success` is specified), and `2` on error.
 
 ---

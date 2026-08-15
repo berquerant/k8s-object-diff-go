@@ -1,6 +1,6 @@
 module github.com/berquerant/k8s-object-diff-go
 
-go 1.26.5
+go 1.26.6
 
 tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
@@ -12,6 +12,7 @@ tool (
 require (
 	al.essio.dev/pkg/shellescape v1.6.0
 	github.com/goccy/go-yaml v1.19.2
+	github.com/mikefarah/yq/v4 v4.53.3
 	github.com/sergi/go-diff v1.4.0
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
@@ -164,7 +165,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.23 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mgechev/revive v1.15.0 // indirect
-	github.com/mikefarah/yq/v4 v4.53.3 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
