@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"bytes"
+	"flag"
 	"io"
 	"os"
 	"os/exec"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+var update = flag.Bool("update", false, "update golden files")
 
 func TestEndToEnd(t *testing.T) {
 	e := newExecutor(t)
@@ -107,12 +110,22 @@ func TestEndToEnd(t *testing.T) {
 				},
 			} {
 				t.Run(tc.name, func(t *testing.T) {
+					got, err := run(tc.name)
+					if !assert.Nil(t, err) {
+						return
+					}
+
+					if *update {
+						if err := os.WriteFile(filepath.Join(dir, tc.file), []byte(got), 0o644); err != nil {
+							t.Fatalf("failed to update golden file: %v", err)
+						}
+						return
+					}
+
 					want, err := readAll(tc.file)
 					if !assert.Nil(t, err) {
 						return
 					}
-					got, err := run(tc.name)
-					assert.Nil(t, err)
 					assert.Equal(t, want, got)
 				})
 			}

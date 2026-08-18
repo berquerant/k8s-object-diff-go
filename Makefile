@@ -44,7 +44,7 @@ golangci-lint:
 
 .PHONY: golden
 golden:
-	./bin/golden.sh
+	go test ./cmd/objdiff -count 1 -run TestEndToEnd -update
 
 .PHONY: bench
 bench:
