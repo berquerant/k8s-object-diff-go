@@ -8,10 +8,14 @@ run() {
     local -r _target="$1"
     local -r _out="$2"
     echo >&2 "Build golden ${_target} out=${_out}"
+    local -a _cmd=(go run ./cmd/objdiff "${_target}/left.yml" "${_target}/right.yml" -o "${_out}")
     if [[ -s "${_target}/arg.txt" ]] ; then
-        go run ./cmd/objdiff "${_target}/left.yml" "${_target}/right.yml" -o "${_out}" $(cat "${_target}/arg.txt"|tr '\n' " ") 2>/dev/null
+        _cmd+=($(cat "${_target}/arg.txt"|tr '\n' " "))
+    fi
+    if [[ -s "${_target}/env.txt" ]] ; then
+        env $(cat "${_target}/env.txt"|tr '\n' " ") "${_cmd[@]}" 2>/dev/null
     else
-        go run ./cmd/objdiff "${_target}/left.yml" "${_target}/right.yml" -o "${_out}" 2>/dev/null
+        "${_cmd[@]}" 2>/dev/null
     fi
 }
 

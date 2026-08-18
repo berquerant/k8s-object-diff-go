@@ -9,6 +9,7 @@ import (
 
 	"github.com/berquerant/k8s-object-diff-go/config"
 	"github.com/berquerant/k8s-object-diff-go/version"
+	"github.com/berquerant/structconfig"
 	"github.com/spf13/pflag"
 )
 
@@ -91,9 +92,19 @@ Otherwise 2.
 invokes
   diff --unified=3 --color=never --label left.yml --label right.yml LEFT_FILE RIGHT_FILE
 
-  DIFFCMD='diff' objdiff -c -C 5 left.yml right.yml
+  OBJDIFF_DIFF_CMD='diff' objdiff -c -C 5 left.yml right.yml
 invokes
   diff --unified=5 --color=always --label left.yml --label right.yml LEFT_FILE RIGHT_FILE
+
+# Configuration & Precedence
+
+Configuration values are resolved in the following order of precedence (highest to lowest):
+1. Command-line flags (e.g. --diff-cmd)
+2. Environment variables prefixed with OBJDIFF_ (e.g. OBJDIFF_DIFF_CMD, OBJDIFF_CONTEXT)
+3. Default values defined for each flag
+
+Environment variables are derived from flag names in uppercase with hyphens replaced by underscores.
+e.g. --ignore-matching-lines -> OBJDIFF_IGNORE_MATCHING_LINES
 
 # Flags`
 
@@ -111,29 +122,13 @@ func main() {
 
 	fs.Bool("version", false, "print objdiff version")
 
-	var c config.Config
-	c.Stdin = os.Stdin
-	fs.StringSliceVarP(&c.Labels, "label", "L", nil, "use label instead of file name")
-	fs.IntVarP(&c.Context, "context", "C", 3, "diff context")
-	fs.StringVarP(&c.Separator, "separator", "d", ">", "object id separator")
-	fs.IntVarP(&c.Indent, "indent", "n", 2, "yaml indent")
-	fs.StringVarP(&c.Out, "out", "o", "text", "output format: text,yaml,id,idlist,markdown")
-	fs.BoolVar(&c.Debug, "debug", false, "enable debug log")
-	fs.BoolVarP(&c.Quiet, "quiet", "q", false, "quiet log")
-	fs.BoolVarP(&c.Color, "color", "c", false, "colored diff")
-	fs.BoolVar(&c.DiffSuccess, "success", false, "exit with 0 even if inputs differ")
-	fs.BoolVar(&c.AllowDuplicateKey, "allow-duplicate-key", true, "allow the use of keys with the same name in the same map")
-	fs.StringVarP(&c.DiffCommand, "diff-cmd", "x", "", "invoke this to get diff instead of builtin differ")
-	fs.BoolVarP(&c.Verbose, "verbose", "v", false, "enable verbose output; annotate diff type and display summary")
-	fs.UintVar(&c.MarkdownHeadingLevel, "markdown-heading", 1, "highest heading level in markdown")
-	fs.StringArrayVarP(&c.IgnoreMatchingLines, "ignore-matching-lines", "I", nil, "ignore lines matching regexp (may be specified multiple times)")
-	fs.StringArrayVarP(&c.IgnoreFields, "ignore-field", "F", nil, "ignore field by path or yq expression (may be specified multiple times)")
-	fs.StringArrayVar(&c.IgnoreLabels, "ignore-label", nil, "ignore label by key (may be specified multiple times)")
-	fs.StringArrayVar(&c.IgnoreAnnotations, "ignore-annotation", nil, "ignore annotation by key (may be specified multiple times)")
-	fs.BoolVar(&c.IgnoreManagedFields, "ignore-managed-fields", false, "ignore metadata.managedFields")
-	fs.BoolVar(&c.IgnoreStatus, "ignore-status", false, "ignore status field")
-
-	err := fs.Parse(os.Args)
+	c, err := structconfig.NewConfigWithMerge(
+		structconfig.New[config.Config](),
+		structconfig.NewMerger[config.Config](),
+		fs,
+		structconfig.WithEnvPrefix("OBJDIFF_"),
+		structconfig.WithArguments(os.Args[1:]),
+	)
 	if errors.Is(err, pflag.ErrHelp) {
 		return
 	}
@@ -141,6 +136,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(exitCodeFailure)
 	}
+	c.Stdin = os.Stdin
 
 	setupLogger(os.Stderr, c.Debug, c.Quiet)
 
@@ -153,7 +149,7 @@ func main() {
 		os.Exit(exitCodeFailure)
 	}
 
-	if fs.NArg() != 3 {
+	if fs.NArg() != 2 {
 		slog.Error("2 files are required")
 		os.Exit(exitCodeFailure)
 	}
@@ -162,7 +158,7 @@ func main() {
 		os.Exit(exitCodeFailure)
 	}
 
-	if err := c.Run(os.Stdout, fs.Arg(1), fs.Arg(2)); err != nil {
+	if err := c.Run(os.Stdout, fs.Arg(0), fs.Arg(1)); err != nil {
 		if errors.Is(err, config.ErrDiffFound) {
 			if c.DiffSuccess {
 				return

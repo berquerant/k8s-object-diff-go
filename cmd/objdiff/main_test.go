@@ -54,6 +54,11 @@ func TestEndToEnd(t *testing.T) {
 				additionalArgs = strings.Split(strings.TrimSpace(s), " ")
 			}
 
+			additionalEnvs := []string{}
+			if s, err := readAll("env.txt"); err == nil {
+				additionalEnvs = strings.Split(strings.TrimSpace(s), " ")
+			}
+
 			run := func(out string) (string, error) {
 				var buf bytes.Buffer
 				args := []string{
@@ -67,6 +72,9 @@ func TestEndToEnd(t *testing.T) {
 				cmd.Dir = "../.."
 				cmd.Stdout = &buf
 				cmd.Stderr = os.Stderr
+				if len(additionalEnvs) > 0 {
+					cmd.Env = append(os.Environ(), additionalEnvs...)
+				}
 				if err := cmd.Run(); err != nil {
 					return "", err
 				}

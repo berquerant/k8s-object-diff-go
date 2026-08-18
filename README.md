@@ -81,9 +81,19 @@ Otherwise 2.
 invokes
   diff --unified=3 --color=never --label left.yml --label right.yml LEFT_FILE RIGHT_FILE
 
-  DIFFCMD='diff' objdiff -c -C 5 left.yml right.yml
+  OBJDIFF_DIFF_CMD='diff' objdiff -c -C 5 left.yml right.yml
 invokes
   diff --unified=5 --color=always --label left.yml --label right.yml LEFT_FILE RIGHT_FILE
+
+# Configuration & Precedence
+
+Configuration values are resolved in the following order of precedence (highest to lowest):
+1. Command-line flags (e.g. --diff-cmd)
+2. Environment variables prefixed with OBJDIFF_ (e.g. OBJDIFF_DIFF_CMD, OBJDIFF_CONTEXT)
+3. Default values defined for each flag
+
+Environment variables are derived from flag names in uppercase with hyphens replaced by underscores.
+e.g. --ignore-matching-lines -> OBJDIFF_IGNORE_MATCHING_LINES
 
 # Flags
 
@@ -99,7 +109,7 @@ invokes
   -I, --ignore-matching-lines stringArray   ignore lines matching regexp (may be specified multiple times)
       --ignore-status                       ignore status field
   -n, --indent int                          yaml indent (default 2)
-  -L, --label strings                       use label instead of file name
+  -L, --label stringArray                   use label instead of file name
       --markdown-heading uint               highest heading level in markdown (default 1)
   -o, --out string                          output format: text,yaml,id,idlist,markdown (default "text")
   -q, --quiet                               quiet log
