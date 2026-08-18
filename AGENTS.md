@@ -97,7 +97,7 @@ Primary dependencies declared in `go.mod`:
 | `make` / `make dist/objdiff` | Builds binary to `dist/objdiff` via `./bin/build.sh` |
 | `make test` | Runs unit tests with `-cover -race` across all packages |
 | `make lint` | Runs `vet`, `check-licenses`, and `golangci-lint` |
-| `make golden` | Updates golden test files using `./bin/golden.sh` |
+| `make golden` | Updates golden test files using `go test -update` |
 | `make vuln` | Checks vulnerabilities using `govulncheck` |
 | `make bench` | Runs benchmark tests in `config/` and reports stats |
 
