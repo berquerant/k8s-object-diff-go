@@ -22,13 +22,13 @@ type Config struct {
 	AllowDuplicateKey    bool      `name:"allow-duplicate-key" default:"true" usage:"allow the use of keys with the same name in the same map"`
 	DiffCommand          string    `name:"diff-cmd" short:"x" usage:"invoke this to get diff instead of builtin differ"`
 	Verbose              bool      `name:"verbose" short:"v" usage:"enable verbose output; annotate diff type and display summary"`
-	Labels               []string  `name:"label" short:"L" usage:"use label instead of file name"`
+	Labels               []string  `name:"label" short:"L" split:"true" sep:";" usage:"use label instead of file name (may be separated by ';' or specified multiple times)"`
 	MarkdownHeadingLevel uint      `name:"markdown-heading" default:"1" usage:"highest heading level in markdown"`
 	Stdin                io.Reader `name:"-"`
-	IgnoreMatchingLines  []string  `name:"ignore-matching-lines" short:"I" usage:"ignore lines matching regexp (may be specified multiple times)"`
-	IgnoreFields         []string  `name:"ignore-field" short:"F" usage:"ignore field by path or yq expression (may be specified multiple times)"`
-	IgnoreLabels         []string  `name:"ignore-label" usage:"ignore label by key (may be specified multiple times)"`
-	IgnoreAnnotations    []string  `name:"ignore-annotation" usage:"ignore annotation by key (may be specified multiple times)"`
+	IgnoreMatchingLines  []string  `name:"ignore-matching-lines" short:"I" split:"true" sep:";" usage:"ignore lines matching regexp (may be separated by ';' or specified multiple times)"`
+	IgnoreFields         []string  `name:"ignore-field" short:"F" split:"true" sep:";" usage:"ignore field by path or yq expression (may be separated by ';' or specified multiple times)"`
+	IgnoreLabels         []string  `name:"ignore-label" split:"true" sep:";" usage:"ignore label by key (may be separated by ';' or specified multiple times)"`
+	IgnoreAnnotations    []string  `name:"ignore-annotation" split:"true" sep:";" usage:"ignore annotation by key (may be separated by ';' or specified multiple times)"`
 	IgnoreManagedFields  bool      `name:"ignore-managed-fields" usage:"ignore metadata.managedFields"`
 	IgnoreStatus         bool      `name:"ignore-status" usage:"ignore status field"`
 }
