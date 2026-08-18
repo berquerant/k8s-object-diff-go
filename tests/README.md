@@ -15,4 +15,5 @@ make golden
 1. add a new directory like `tests/new-test`
 2. add left and right yaml files
 3. (optional) add `arg.txt` for additional arguments of `objdiff`
-4. `Update tests`
+4. (optional) add `env.txt` for environment variables passed to `objdiff`
+5. `Update tests`
