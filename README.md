@@ -1,91 +1,108 @@
 # k8s-object-diff-go
 
-```
-❯ objdiff --help
 objdiff - k8s object diff by object id
 
-# Usage
+## Usage
 
-  objdiff [flags] LEFT_FILE RIGHT_FILE
+```shell
+objdiff [flags] LEFT_FILE RIGHT_FILE
+```
 
 Either LEFT_FILE or RIGHT_FILE can be set to "-". Here, "-" represents stdin.
 
-# Object ID
+## Object ID
 
 A unique ID for a k8s object.
 e.g.
 
-  apiVersion: v1
-  kind: Pod
-  metadata:
-    name: nginx
-    namespace: default
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  namespace: default
+```
 
 then id is 'v1>Pod>default>nginx'.
 
-# Output format
-## idlist
+## Output format
+
+### idlist
 
 All object IDs.
 
-## id
+### id
 
 ID diff.
 
-## text
+### text
 
 Unified diff.
 
-## yaml
+### yaml
 
 Array of
 
-  id: "Object ID"
-  diff: "Unified diff"
-  left: "Left object (optional)"
-  right: "Right object (optional)"
-  type: "Diff type (add or change or destroy)"
+```yaml
+id: "Object ID"
+diff: "Unified diff"
+left: "Left object (optional)"
+right: "Right object (optional)"
+type: "Diff type (add or change or destroy)"
+```
 
-## markdown
+### markdown
 
-  # Objdiff Summary
+```markdown
+# Objdiff Summary
 
-  Left file <-> Right file
+Left file <-> Right file
 
-  | **add** | **change** | **destroy** |
-  | :---: | :---: | :---: |
-  | x | y | z |
-  ## Diff type Object ID
+| **add** | **change** | **destroy** |
+| :---: | :---: | :---: |
+| x | y | z |
+## Diff type Object ID
 
-  <details><summary>View Diff</summary>
-  Unified diff
-  </details>
+<details><summary>View Diff</summary>
+Unified diff
+</details>
+```
 
 or
 
-  # Objdiff Summary
+```markdown
+# Objdiff Summary
 
-  Left file <-> Right file
+Left file <-> Right file
 
-  No changes.
+No changes.
+```
 
-# Exit status
+## Exit status
 
 0 if inputs are the same.
 1 if inputs differ.
 Otherwise 2.
 
-# Override differ
+## Override differ
 
-  objdiff -x diff left.yml right.yml
+```shell
+objdiff -x diff left.yml right.yml
+```
 invokes
-  diff --unified=3 --color=never --label left.yml --label right.yml LEFT_FILE RIGHT_FILE
+```shell
+diff --unified=3 --color=never --label left.yml --label right.yml LEFT_FILE RIGHT_FILE
+```
 
-  OBJDIFF_DIFF_CMD='diff' objdiff -c -C 5 left.yml right.yml
+```shell
+OBJDIFF_DIFF_CMD='diff' objdiff -c -C 5 left.yml right.yml
+```
 invokes
-  diff --unified=5 --color=always --label left.yml --label right.yml LEFT_FILE RIGHT_FILE
+```shell
+diff --unified=5 --color=always --label left.yml --label right.yml LEFT_FILE RIGHT_FILE
+```
 
-# Configuration & Precedence
+## Configuration & Precedence
 
 Configuration values are resolved in the following order of precedence (highest to lowest):
 1. Command-line flags (e.g. --diff-cmd)
@@ -95,8 +112,9 @@ Configuration values are resolved in the following order of precedence (highest 
 Environment variables are derived from flag names in uppercase with hyphens replaced by underscores.
 e.g. --ignore-matching-lines -> OBJDIFF_IGNORE_MATCHING_LINES
 
-# Flags
+## Flags
 
+```
       --allow-duplicate-key                 allow the use of keys with the same name in the same map (default true)
   -c, --color                               colored diff
   -C, --context int                         diff context (default 3)
@@ -131,14 +149,6 @@ yields the [result](./tests/diffs/out.txt).
 
 ## Installation
 
-Build binary:
-
 ``` shell
-make
-```
-
-Show help:
-
-``` shell
-./dist/objdiff --help
+go install github.com/berquerant/k8s-object-diff-go/cmd/objdiff@latest
 ```

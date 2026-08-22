@@ -40,11 +40,11 @@ Standard text diff tools compare files line-by-line, which often yields messy or
 .
 ├── cmd/
 │   └── objdiff/            # CLI binary main entry point
-├── config/                 # Command-line configuration, runner, and output formatting modes
+├── config/                 # Command-line configuration, runner, output formatting modes, and help doc generator
 ├── internal/               # Core domain logic, object parsing, diff calculations, and marshaling
 ├── version/                # Version string definition
 ├── tests/                  # Test data and fixtures for diff comparison
-├── bin/                    # Helper shell scripts (build, golden testing, licensing)
+├── bin/                    # Helper shell scripts (build, README generation, licensing)
 ├── Makefile                # Target automation for build, lint, test, etc.
 └── go.mod                  # Go module definition and dependencies
 ```
@@ -52,10 +52,11 @@ Standard text diff tools compare files line-by-line, which often yields messy or
 ### Key Packages & Responsibilities
 
 #### 1. `cmd/objdiff`
-- [main.go](cmd/objdiff/main.go): Parses CLI flags using `spf13/pflag`, builds the `config.Config` struct, handles stdin resolution, executes `config.Run`, and manages process exit codes.
+- [main.go](cmd/objdiff/main.go): Parses CLI flags using `spf13/pflag`, builds the `config.Config` struct, handles stdin resolution, executes `config.Run`, renders flag usage in markdown code blocks, and manages process exit codes.
 
 #### 2. `config`
 - [config.go](config/config.go): Defines `Config` struct, output modes (`OutModeText`, `OutModeYaml`, etc.), and instantiates built-in or external differ engines.
+- [help.go](config/help.go): Builds structured markdown documentation and CLI help texts using `Help` and `MarkdownDoc`.
 - [run.go](config/run.go): Orchestrates the end-to-end execution flow — loading objects from left/right sources into map structures, calculating pairs, and initializing diff printing.
 - [mode.go](config/mode.go): Implements `diffPrinter`, formatting diff results for each supported output mode (text, YAML, markdown, ID summaries).
 
@@ -96,8 +97,10 @@ Primary dependencies declared in `go.mod`:
 | :--- | :--- |
 | `make` / `make dist/objdiff` | Builds binary to `dist/objdiff` via `./bin/build.sh` |
 | `make test` | Runs unit tests with `-cover -race` across all packages |
-| `make lint` | Runs `vet`, `check-licenses`, and `golangci-lint` |
-| `make golden` | Updates golden test files using `go test -update` |
+| `make lint` | Runs `vet`, `check-licenses`, `check-readme`, and `golangci-lint` |
+| `make golden` | Updates golden test files using `go test -update` across `config` and `cmd/objdiff` |
+| `make README.md` | Generates `README.md` via `./bin/readme.sh` |
+| `make check-readme` | Checks that `README.md` is up to date without diff |
 | `make vuln` | Checks vulnerabilities using `govulncheck` |
 | `make bench` | Runs benchmark tests in `config/` and reports stats |
 
@@ -107,7 +110,7 @@ To run unit and integration tests:
 make test
 ```
 
-To update golden test files after intentional changes to output format:
+To update golden test files after intentional changes to output format or help doc:
 ```bash
 make golden
 ```
@@ -117,7 +120,8 @@ make golden
 ## 6. Guidelines for AI Agents
 
 When working on this codebase:
-1. **Maintain Clean Package Boundaries**: Keep YAML parsing logic within `internal/yaml.go`, diff generation inside `internal/diff.go`, and output rendering within `config/mode.go`.
+1. **Maintain Clean Package Boundaries**: Keep YAML parsing logic within `internal/yaml.go`, diff generation inside `internal/diff.go`, help documentation logic in `config/help.go`, and output rendering within `config/mode.go`.
 2. **Preserve Exit Status Contract**: Exit status `0` means identical inputs; `1` means diffs found; `2` means error occurred (unless `--success` is toggled).
 3. **Verify Lint & Tests**: Always run `make test` and `make lint` after making changes. Ensure zero lint warnings or test regressions.
-4. **Golden Files**: If output formatting is updated, check if test fixtures in `tests/` need updating via `make golden`.
+4. **Golden Files & Documentation**: If output formatting or CLI help is updated, update golden test files via `make golden` and regenerate `README.md` via `make README.md`.
+
