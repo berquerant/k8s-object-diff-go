@@ -7,6 +7,7 @@ BIN = dist/objdiff
 CMD = "./cmd/objdiff"
 
 THIRD_PARTY_LICENSES = NOTICE
+README = README.md
 
 .PHONY: $(BIN)
 $(BIN):
@@ -21,7 +22,7 @@ init:
 	$(GOMOD) tidy -v
 
 .PHONY: lint
-lint: check-licenses vet golangci-lint
+lint: check-licenses check-readme vet golangci-lint
 
 .PHONY: vuln
 vuln:
@@ -44,11 +45,23 @@ golangci-lint:
 
 .PHONY: golden
 golden:
+	go test ./config -count 1 -run TestHelpMarkdownGolden -update
 	go test ./cmd/objdiff -count 1 -run TestEndToEnd -update
 
 .PHONY: bench
 bench:
 	cd config ; go test -bench . -count=6 | go tool benchstat -
+
+.PHONY: $(README)
+$(README):
+	./bin/readme.sh > $@
+
+.PHONY: check-readme-diff
+check-readme-diff: $(README)
+	git diff --exit-code $(README)
+
+.PHONY: check-readme
+check-readme: check-readme-diff
 
 .PHONY: $(THIRD_PARTY_LICENSES)
 $(THIRD_PARTY_LICENSES):
