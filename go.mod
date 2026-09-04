@@ -1,6 +1,6 @@
 module github.com/berquerant/k8s-object-diff-go
 
-go 1.26.6
+go 1.27.0
 
 tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
@@ -11,6 +11,7 @@ tool (
 
 require (
 	al.essio.dev/pkg/shellescape v1.6.0
+	github.com/berquerant/structconfig v0.12.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/mikefarah/yq/v4 v4.53.3
 	github.com/sergi/go-diff v1.4.0
@@ -54,7 +55,6 @@ require (
 	github.com/ashanbrown/forbidigo/v2 v2.3.1 // indirect
 	github.com/ashanbrown/makezero/v2 v2.2.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/berquerant/structconfig v0.12.0 // indirect
 	github.com/bkielbasa/cyclop v1.2.3 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
 	github.com/bombsimon/wsl/v4 v4.7.0 // indirect
