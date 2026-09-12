@@ -89,7 +89,7 @@ Primary dependencies declared in `go.mod`:
 ## 5. Development & Testing Workflow
 
 ### Prerequisites
-- Go `1.26+`
+- Go `1.27+`
 
 ### Build Commands (`Makefile`)
 
