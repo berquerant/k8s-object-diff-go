@@ -498,6 +498,33 @@ shall not be used in advertising or otherwise to promote the sale,
 use or other dealings in these Data Files or Software without prior
 written authorization of the copyright holder.
 ```
+## github.com/apparentlymart/go-textseg/v17/textseg
+
+* Name: github.com/apparentlymart/go-textseg/v17/textseg
+* Version: v17.0.1
+* License: [MIT](https://github.com/apparentlymart/go-textseg/blob/v17.0.1/LICENSE)
+
+```
+Copyright (c) 2017 Martin Atkins
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 ## github.com/berquerant/structconfig
 
 * Name: github.com/berquerant/structconfig
@@ -1479,8 +1506,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ## github.com/magiconair/properties
 
 * Name: github.com/magiconair/properties
-* Version: v1.8.10
-* License: [BSD-2-Clause](https://github.com/magiconair/properties/blob/v1.8.10/LICENSE.md)
+* Version: v1.18.11
+* License: [BSD-2-Clause](https://github.com/magiconair/properties/blob/v1.18.11/LICENSE.md)
 
 ```
 Copyright (c) 2013-2020, Frank Schroeder
@@ -1557,8 +1584,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ## github.com/mikefarah/yq/v4/pkg/yqlib
 
 * Name: github.com/mikefarah/yq/v4/pkg/yqlib
-* Version: v4.53.3
-* License: [MIT](https://github.com/mikefarah/yq/blob/v4.53.3/LICENSE)
+* Version: v4.53.6
+* License: [MIT](https://github.com/mikefarah/yq/blob/v4.53.6/LICENSE)
 
 ```
 The MIT License (MIT)
@@ -1738,8 +1765,8 @@ SOFTWARE.
 ## github.com/zclconf/go-cty/cty
 
 * Name: github.com/zclconf/go-cty/cty
-* Version: v1.18.1
-* License: [MIT](https://github.com/zclconf/go-cty/blob/v1.18.1/LICENSE)
+* Version: v1.19.0
+* License: [MIT](https://github.com/zclconf/go-cty/blob/v1.19.0/LICENSE)
 
 ```
 MIT License
