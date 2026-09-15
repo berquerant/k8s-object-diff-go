@@ -1,1 +1,1 @@
---ignore-annotation extraAnnotation
+-a extraAnnotation

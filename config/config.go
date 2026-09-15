@@ -25,12 +25,12 @@ type Config struct {
 	Labels               []string  `name:"label" short:"L" split:"true" sep:";" usage:"use label instead of file name (may be separated by ';' or specified multiple times)"`
 	MarkdownHeadingLevel uint      `name:"markdown-heading" default:"1" usage:"highest heading level in markdown"`
 	Stdin                io.Reader `name:"-"`
-	IgnoreMatchingLines  []string  `name:"ignore-matching-lines" short:"I" split:"true" sep:";" usage:"ignore lines matching regexp (may be separated by ';' or specified multiple times)"`
-	IgnoreFields         []string  `name:"ignore-field" short:"F" split:"true" sep:";" usage:"ignore field by path or yq expression (may be separated by ';' or specified multiple times)"`
-	IgnoreLabels         []string  `name:"ignore-label" split:"true" sep:";" usage:"ignore label by key (may be separated by ';' or specified multiple times)"`
-	IgnoreAnnotations    []string  `name:"ignore-annotation" split:"true" sep:";" usage:"ignore annotation by key (may be separated by ';' or specified multiple times)"`
-	IgnoreManagedFields  bool      `name:"ignore-managed-fields" usage:"ignore metadata.managedFields"`
-	IgnoreStatus         bool      `name:"ignore-status" usage:"ignore status field"`
+	IgnoreMatchingLines  []string  `name:"ignore-matching-lines" short:"i" split:"true" sep:";" usage:"ignore lines matching regexp (may be separated by ';' or specified multiple times)"`
+	IgnoreFields         []string  `name:"ignore-field" short:"f" split:"true" sep:";" usage:"ignore field by path or yq expression (may be separated by ';' or specified multiple times)"`
+	IgnoreLabels         []string  `name:"ignore-label" short:"l" split:"true" sep:";" usage:"ignore label by key (may be separated by ';' or specified multiple times)"`
+	IgnoreAnnotations    []string  `name:"ignore-annotation" short:"a" split:"true" sep:";" usage:"ignore annotation by key (may be separated by ';' or specified multiple times)"`
+	IgnoreManagedFields  bool      `name:"ignore-managed-fields" short:"m" usage:"ignore metadata.managedFields"`
+	IgnoreStatus         bool      `name:"ignore-status" short:"s" usage:"ignore status field"`
 }
 
 type OutMode string
