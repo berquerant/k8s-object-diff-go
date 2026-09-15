@@ -1,1 +1,1 @@
--F spec.template.spec.containers[].image
+-f spec.template.spec.containers[].image
