@@ -129,6 +129,7 @@ e.g. --ignore-matching-lines -> OBJDIFF_IGNORE_MATCHING_LINES
   -n, --indent int                          yaml indent (default 2)
   -L, --label stringArray                   use label instead of file name (may be separated by ';' or specified multiple times)
       --markdown-heading uint               highest heading level in markdown (default 1)
+      --mcp                                 start MCP server over stdio
   -o, --out string                          output format: text,yaml,id,idlist,markdown (default "text")
   -q, --quiet                               quiet log
   -d, --separator string                    object id separator (default ">")
@@ -151,4 +152,21 @@ yields the [result](./tests/diffs/out.txt).
 
 ``` shell
 go install github.com/berquerant/k8s-object-diff-go/cmd/objdiff@latest
+```
+
+## MCP Server Configuration
+
+You can register `objdiff` as a Model Context Protocol (MCP) server for AI agents using `--mcp`.
+
+### MCP Settings JSON
+
+```json
+{
+  "mcpServers": {
+    "objdiff": {
+      "command": "objdiff",
+      "args": ["--mcp"]
+    }
+  }
+}
 ```

@@ -31,6 +31,7 @@ type Config struct {
 	IgnoreAnnotations    []string  `name:"ignore-annotation" short:"a" split:"true" sep:";" usage:"ignore annotation by key (may be separated by ';' or specified multiple times)"`
 	IgnoreManagedFields  bool      `name:"ignore-managed-fields" short:"m" usage:"ignore metadata.managedFields"`
 	IgnoreStatus         bool      `name:"ignore-status" short:"s" usage:"ignore status field"`
+	MCP                  bool      `name:"mcp" usage:"start MCP server over stdio"`
 }
 
 type OutMode string

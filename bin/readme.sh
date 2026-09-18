@@ -35,6 +35,23 @@ yields the [result](./tests/diffs/out.txt).
 \`\`\` shell
 go install github.com/berquerant/k8s-object-diff-go/cmd/objdiff@latest
 \`\`\`
+
+## MCP Server Configuration
+
+You can register \`objdiff\` as a Model Context Protocol (MCP) server for AI agents using \`--mcp\`.
+
+### MCP Settings JSON
+
+\`\`\`json
+{
+  "mcpServers": {
+    "objdiff": {
+      "command": "objdiff",
+      "args": ["--mcp"]
+    }
+  }
+}
+\`\`\`
 README_EOF
 }
 
