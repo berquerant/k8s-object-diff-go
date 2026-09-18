@@ -29,6 +29,56 @@ func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string
 		return fmt.Errorf("'%s' cannot be specified for both left and right", stdinFilename)
 	}
 
+	leftReader, leftClose, err := openFileOrStdin(left, c.Stdin)
+	if err != nil {
+		return fmt.Errorf("left file: %s: %w", left, err)
+	}
+	defer leftClose()
+
+	rightReader, rightClose, err := openFileOrStdin(right, c.Stdin)
+	if err != nil {
+		return fmt.Errorf("right file: %s: %w", right, err)
+	}
+	defer rightClose()
+
+	labels := c.Labels
+	switch {
+	case len(labels) == 1:
+		left = labels[0]
+	case len(labels) > 1:
+		left, right = labels[0], labels[1]
+	}
+
+	return c.runWithReadersAndLabels(ctx, w, leftReader, rightReader, left, right)
+}
+
+func openFileOrStdin(file string, stdin io.Reader) (io.Reader, func(), error) {
+	switch file {
+	case stdinFilename:
+		return stdin, func() {}, nil
+	default:
+		f, err := os.Open(file)
+		if err != nil {
+			return nil, nil, err
+		}
+		return f, func() { _ = f.Close() }, nil
+	}
+}
+
+func (c *Config) runWithReaders(ctx context.Context, w io.Writer, leftReader, rightReader io.Reader) error {
+	left := "left"
+	right := "right"
+	labels := c.Labels
+	switch {
+	case len(labels) == 1:
+		left = labels[0]
+	case len(labels) > 1:
+		left, right = labels[0], labels[1]
+	}
+	return c.runWithReadersAndLabels(ctx, w, leftReader, rightReader, left, right)
+}
+
+func (c *Config) runWithReadersAndLabels(ctx context.Context, w io.Writer, leftReader, rightReader io.Reader, left, right string) error {
 	lineFilter, err := internal.NewLineFilter(c.IgnoreMatchingLines)
 	if err != nil {
 		return fmt.Errorf("ignore-matching-lines: %w", err)
@@ -56,11 +106,11 @@ func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string
 	}
 
 	loader := newObjectLoader(c, lineFilter, yqFilters)
-	leftMap, err := loader.load(ctx, left)
+	leftMap, err := loader.loadFromReader(ctx, leftReader, left)
 	if err != nil {
 		return fmt.Errorf("left file: %s: %w", left, err)
 	}
-	rightMap, err := loader.load(ctx, right)
+	rightMap, err := loader.loadFromReader(ctx, rightReader, right)
 	if err != nil {
 		return fmt.Errorf("right file: %s: %w", right, err)
 	}
@@ -128,29 +178,12 @@ func newObjectLoader(c *Config, lineFilter *internal.LineFilter, yqFilters []*in
 	}
 }
 
-func (l *objectLoader) load(ctx context.Context, file string) (*internal.ObjectMap, error) {
-	slog.Debug("loadObjects", slog.String("file", file))
-
-	var r io.Reader
-	switch file {
-	case stdinFilename:
-		r = l.stdin
-	default:
-		f, err := os.Open(file)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open %s: %w", file, err)
-		}
-		defer func() {
-			_ = f.Close()
-		}()
-		r = f
-	}
-
+func (l *objectLoader) loadFromReader(ctx context.Context, r io.Reader, label string) (*internal.ObjectMap, error) {
 	objects, err := internal.LoadObjects(ctx, r, l.marshaler, l.allowDuplicateMapKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load objects from %s: %w", file, err)
+		return nil, fmt.Errorf("failed to load objects from %s: %w", label, err)
 	}
-	slog.Debug("loaded objects", slog.String("file", file), slog.Int("len", len(objects)))
+	slog.Debug("loaded objects", slog.String("file", label), slog.Int("len", len(objects)))
 
 	objectMap := internal.NewObjectMap(l.sep)
 	for _, x := range objects {
@@ -158,16 +191,16 @@ func (l *objectLoader) load(ctx context.Context, file string) (*internal.ObjectM
 		for _, f := range l.yqFilters {
 			filteredBody, err := f.FilterBody(x.Body)
 			if err != nil {
-				return nil, fmt.Errorf("failed to filter body in %s: %w", file, err)
+				return nil, fmt.Errorf("failed to filter body in %s: %w", label, err)
 			}
 			x.Body = filteredBody
 		}
 
-		slog.Debug("add object", slog.String("file", file), slog.String("id", x.Header.IntoID(l.sep)))
+		slog.Debug("add object", slog.String("file", label), slog.String("id", x.Header.IntoID(l.sep)))
 		if objectMap.Add(x) {
 			slog.Warn("duplicated object",
 				slog.String("id", x.Header.IntoID(l.sep)),
-				slog.String("file", file),
+				slog.String("file", label),
 			)
 		}
 	}

@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/berquerant/k8s-object-diff-go/config"
 	"github.com/berquerant/k8s-object-diff-go/version"
@@ -53,6 +56,19 @@ func main() {
 	if c.Context < 0 {
 		slog.Error("invalid context length")
 		os.Exit(exitCodeFailure)
+	}
+
+	if c.MCP {
+		ctx, stop := signal.NotifyContext(
+			context.Background(),
+			syscall.SIGINT, syscall.SIGTERM,
+		)
+		defer stop()
+		if err := c.RunMCP(ctx); err != nil {
+			slog.Error("mcp server error", slog.Any("err", err))
+			os.Exit(exitCodeFailure)
+		}
+		return
 	}
 
 	if fs.NArg() != 2 {
