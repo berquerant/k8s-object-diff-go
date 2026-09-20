@@ -41,14 +41,7 @@ func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string
 	}
 	defer rightClose()
 
-	labels := c.Labels
-	switch {
-	case len(labels) == 1:
-		left = labels[0]
-	case len(labels) > 1:
-		left, right = labels[0], labels[1]
-	}
-
+	left, right = c.resolveLabels(left, right)
 	return c.runWithReadersAndLabels(ctx, w, leftReader, rightReader, left, right)
 }
 
@@ -65,16 +58,38 @@ func openFileOrStdin(file string, stdin io.Reader) (io.Reader, func(), error) {
 	}
 }
 
-func (c *Config) runWithReaders(ctx context.Context, w io.Writer, leftReader, rightReader io.Reader) error {
-	left := "left"
-	right := "right"
-	labels := c.Labels
+func (c *Config) resolveLabels(defaultLeft, defaultRight string) (string, string) {
 	switch {
-	case len(labels) == 1:
-		left = labels[0]
-	case len(labels) > 1:
-		left, right = labels[0], labels[1]
+	case len(c.Labels) == 1:
+		return c.Labels[0], defaultRight
+	case len(c.Labels) > 1:
+		return c.Labels[0], c.Labels[1]
+	default:
+		return defaultLeft, defaultRight
 	}
+}
+
+func (c *Config) buildYqFilters() []*internal.YqFilter {
+	var yqFilters []*internal.YqFilter
+	appendFilter := func(f *internal.YqFilter) {
+		if f != nil {
+			yqFilters = append(yqFilters, f)
+		}
+	}
+	appendFilter(internal.NewFieldFilter(c.IgnoreFields))
+	appendFilter(internal.NewLabelFilter(c.IgnoreLabels))
+	appendFilter(internal.NewAnnotationFilter(c.IgnoreAnnotations))
+	if c.IgnoreManagedFields {
+		appendFilter(internal.NewFieldFilter([]string{"metadata.managedFields"}))
+	}
+	if c.IgnoreStatus {
+		appendFilter(internal.NewFieldFilter([]string{"status"}))
+	}
+	return yqFilters
+}
+
+func (c *Config) runWithReaders(ctx context.Context, w io.Writer, leftReader, rightReader io.Reader) error {
+	left, right := c.resolveLabels("left", "right")
 	return c.runWithReadersAndLabels(ctx, w, leftReader, rightReader, left, right)
 }
 
@@ -84,28 +99,7 @@ func (c *Config) runWithReadersAndLabels(ctx context.Context, w io.Writer, leftR
 		return fmt.Errorf("ignore-matching-lines: %w", err)
 	}
 
-	var yqFilters []*internal.YqFilter
-	if f := internal.NewFieldFilter(c.IgnoreFields); f != nil {
-		yqFilters = append(yqFilters, f)
-	}
-	if f := internal.NewLabelFilter(c.IgnoreLabels); f != nil {
-		yqFilters = append(yqFilters, f)
-	}
-	if f := internal.NewAnnotationFilter(c.IgnoreAnnotations); f != nil {
-		yqFilters = append(yqFilters, f)
-	}
-	if c.IgnoreManagedFields {
-		if f := internal.NewFieldFilter([]string{"metadata.managedFields"}); f != nil {
-			yqFilters = append(yqFilters, f)
-		}
-	}
-	if c.IgnoreStatus {
-		if f := internal.NewFieldFilter([]string{"status"}); f != nil {
-			yqFilters = append(yqFilters, f)
-		}
-	}
-
-	loader := newObjectLoader(c, lineFilter, yqFilters)
+	loader := newObjectLoader(c, lineFilter, c.buildYqFilters())
 	leftMap, err := loader.loadFromReader(ctx, leftReader, left)
 	if err != nil {
 		return fmt.Errorf("left file: %s: %w", left, err)
@@ -122,13 +116,6 @@ func (c *Config) runWithReadersAndLabels(ctx context.Context, w io.Writer, leftR
 	differ, err := c.newDiffer()
 	if err != nil {
 		return fmt.Errorf("differ: %w", err)
-	}
-
-	switch {
-	case len(c.Labels) == 1:
-		left = c.Labels[0]
-	case len(c.Labels) > 1:
-		left, right = c.Labels[0], c.Labels[1]
 	}
 
 	printer := &diffPrinter{

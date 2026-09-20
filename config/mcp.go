@@ -74,6 +74,42 @@ func (c *Config) runDiffTool(ctx context.Context, params DiffToolParams) (DiffTo
 	// Create a copy of config and apply param overrides
 	cfg := *c
 
+	cfg.applyOverrides(params)
+
+	leftReader, leftCloser, leftLabel, err := openInput(params.Left, "left")
+	if err != nil {
+		return DiffToolResult{}, fmt.Errorf("open left file: %w", err)
+	}
+	defer leftCloser()
+
+	rightReader, rightCloser, rightLabel, err := openInput(params.Right, "right")
+	if err != nil {
+		return DiffToolResult{}, fmt.Errorf("open right file: %w", err)
+	}
+	defer rightCloser()
+
+	if len(cfg.Labels) == 0 {
+		cfg.Labels = []string{leftLabel, rightLabel}
+	}
+
+	var buf bytes.Buffer
+	err = cfg.runWithReaders(ctx, &buf, leftReader, rightReader)
+	hasDiff := false
+	if err != nil {
+		if errors.Is(err, ErrDiffFound) {
+			hasDiff = true
+		} else {
+			return DiffToolResult{}, err
+		}
+	}
+
+	return DiffToolResult{
+		Diff:    buf.String(),
+		HasDiff: hasDiff,
+	}, nil
+}
+
+func (cfg *Config) applyOverrides(params DiffToolParams) {
 	if cfg.Separator == "" {
 		cfg.Separator = ">"
 	}
@@ -100,76 +136,27 @@ func (c *Config) runDiffTool(ctx context.Context, params DiffToolParams) (DiffTo
 	if params.MarkdownHeadingLevel != nil {
 		cfg.MarkdownHeadingLevel = *params.MarkdownHeadingLevel
 	}
-	if len(params.IgnoreMatchingLines) > 0 {
-		cfg.IgnoreMatchingLines = append(cfg.IgnoreMatchingLines, params.IgnoreMatchingLines...)
-	}
-	if len(params.IgnoreFields) > 0 {
-		cfg.IgnoreFields = append(cfg.IgnoreFields, params.IgnoreFields...)
-	}
-	if len(params.IgnoreLabels) > 0 {
-		cfg.IgnoreLabels = append(cfg.IgnoreLabels, params.IgnoreLabels...)
-	}
-	if len(params.IgnoreAnnotations) > 0 {
-		cfg.IgnoreAnnotations = append(cfg.IgnoreAnnotations, params.IgnoreAnnotations...)
-	}
+	cfg.IgnoreMatchingLines = append(cfg.IgnoreMatchingLines, params.IgnoreMatchingLines...)
+	cfg.IgnoreFields = append(cfg.IgnoreFields, params.IgnoreFields...)
+	cfg.IgnoreLabels = append(cfg.IgnoreLabels, params.IgnoreLabels...)
+	cfg.IgnoreAnnotations = append(cfg.IgnoreAnnotations, params.IgnoreAnnotations...)
 	if params.IgnoreManagedFields {
 		cfg.IgnoreManagedFields = true
 	}
 	if params.IgnoreStatus {
 		cfg.IgnoreStatus = true
 	}
+}
 
-	var leftReader io.Reader
-	leftLabel := "left"
-	if isFile(params.Left) {
-		f, err := os.Open(params.Left)
+func openInput(pathOrContent, defaultLabel string) (io.Reader, func(), string, error) {
+	if isFile(pathOrContent) {
+		f, err := os.Open(pathOrContent)
 		if err != nil {
-			return DiffToolResult{}, fmt.Errorf("open left file: %w", err)
+			return nil, nil, "", err
 		}
-		defer func() {
-			_ = f.Close()
-		}()
-		leftReader = f
-		leftLabel = params.Left
-	} else {
-		leftReader = strings.NewReader(params.Left)
+		return f, func() { _ = f.Close() }, pathOrContent, nil
 	}
-
-	var rightReader io.Reader
-	rightLabel := "right"
-	if isFile(params.Right) {
-		f, err := os.Open(params.Right)
-		if err != nil {
-			return DiffToolResult{}, fmt.Errorf("open right file: %w", err)
-		}
-		defer func() {
-			_ = f.Close()
-		}()
-		rightReader = f
-		rightLabel = params.Right
-	} else {
-		rightReader = strings.NewReader(params.Right)
-	}
-
-	if len(cfg.Labels) == 0 {
-		cfg.Labels = []string{leftLabel, rightLabel}
-	}
-
-	var buf bytes.Buffer
-	err := cfg.runWithReaders(ctx, &buf, leftReader, rightReader)
-	hasDiff := false
-	if err != nil {
-		if errors.Is(err, ErrDiffFound) {
-			hasDiff = true
-		} else {
-			return DiffToolResult{}, err
-		}
-	}
-
-	return DiffToolResult{
-		Diff:    buf.String(),
-		HasDiff: hasDiff,
-	}, nil
+	return strings.NewReader(pathOrContent), func() {}, defaultLabel, nil
 }
 
 func isFile(pathOrContent string) bool {
@@ -182,3 +169,4 @@ func isFile(pathOrContent string) bool {
 	}
 	return !info.IsDir()
 }
+

@@ -408,21 +408,15 @@ func (p *DMP) rawPatches(hunks []*DMPHunk) ([]*DMPPatch, error) {
 			patches = append(patches, patch)
 			patch = nil
 		}
-		newPatch = func(hunk *DMPHunk) {
-			patch = &DMPPatch{
-				Hunks: []*DMPHunk{
-					hunk,
-				},
-			}
-		}
 		push = func(hunk *DMPHunk) {
 			if patch == nil {
-				newPatch(hunk)
+				patch = &DMPPatch{Hunks: []*DMPHunk{hunk}}
 				return
 			}
 			patch.Hunks = append(patch.Hunks, hunk)
 		}
 	)
+
 	for i, h := range hunks {
 		isTail := i == len(hunks)-1
 		if i > 0 {
@@ -430,7 +424,7 @@ func (p *DMP) rawPatches(hunks []*DMPHunk) ([]*DMPPatch, error) {
 		}
 		curChanged := h.Op != DMPOpEqual
 		if prevHunk == nil {
-			if curChanged { // head is Insert or Delete
+			if curChanged {
 				push(h)
 				if isTail {
 					add()
@@ -440,46 +434,52 @@ func (p *DMP) rawPatches(hunks []*DMPHunk) ([]*DMPPatch, error) {
 			continue
 		}
 
-		mkErr := func(s string) error {
-			return fmt.Errorf("%s: prev=%#v cur=%#v: %w", s, prevHunk, h, errRawPatches)
-		}
-
 		prevChanged := prevHunk.Op != DMPOpEqual
-		switch {
-		case prevChanged && curChanged: // e.g. Delete -> Insert
-			if patch == nil {
-				return nil, mkErr("prevChanged curChanged but patch was nil")
-			}
-			push(h) // push next change
-			if isTail {
-				add()
-				break
-			}
-			continue
-		case prevChanged && !curChanged: // e.g. Insert -> Equal
-			if patch == nil {
-				return nil, mkErr("prevChanged not curChanged but patch was nil")
-			}
-			push(h) // push Equal for Context
-			add()   // flush
-			continue
-		case !prevChanged && curChanged: // e.g. Equal -> Delete
-			if patch != nil {
-				return nil, mkErr("not prevChanged curChanged but patch was not nil")
-			}
-			push(prevHunk) // push Equal for Context
-			push(h)
-			if isTail {
-				add()
-				break
-			}
-			continue
-		default: // Equal -> Equal
-			return nil, mkErr("prevChanged and curChanged cannot both be false")
+		flush, err := stepRawPatch(prevChanged, curChanged, &patch, push, prevHunk, h)
+		if err != nil {
+			return nil, err
+		}
+		if flush || isTail {
+			add()
 		}
 	}
 
 	return patches, nil
+}
+
+func stepRawPatch(
+	prevChanged, curChanged bool,
+	patch **DMPPatch,
+	push func(*DMPHunk),
+	prevHunk, h *DMPHunk,
+) (flush bool, err error) {
+	mkErr := func(s string) error {
+		return fmt.Errorf("%s: prev=%#v cur=%#v: %w", s, prevHunk, h, errRawPatches)
+	}
+
+	switch {
+	case prevChanged && curChanged:
+		if *patch == nil {
+			return false, mkErr("prevChanged curChanged but patch was nil")
+		}
+		push(h)
+		return false, nil
+	case prevChanged && !curChanged:
+		if *patch == nil {
+			return false, mkErr("prevChanged not curChanged but patch was nil")
+		}
+		push(h)
+		return true, nil
+	case !prevChanged && curChanged:
+		if *patch != nil {
+			return false, mkErr("not prevChanged curChanged but patch was not nil")
+		}
+		push(prevHunk)
+		push(h)
+		return false, nil
+	default:
+		return false, mkErr("prevChanged and curChanged cannot both be false")
+	}
 }
 
 // rawDiff calculates the diff hunks.

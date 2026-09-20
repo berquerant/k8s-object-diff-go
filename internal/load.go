@@ -31,83 +31,33 @@ func LoadObjects(ctx context.Context, r io.Reader, marshaler Marshaler, allowDup
 var ErrLoadObject = errors.New("LoadObject")
 
 func LoadObjectFromMap(ctx context.Context, marshaler Marshaler, obj map[string]any) (*Object, error) {
-	getString := func(key string) (string, error) {
-		x, ok := obj[key]
-		if !ok {
-			return "", fmt.Errorf("%s is missing: %w", key, ErrLoadObject)
-		}
-		v, ok := x.(string)
-		if !ok {
-			return "", fmt.Errorf("%s is not a string: %w", key, ErrLoadObject)
-		}
-		return v, nil
+	apiVersion, err := getRequiredString(obj, "apiVersion")
+	if err != nil {
+		return nil, err
+	}
+	kind, err := getRequiredString(obj, "kind")
+	if err != nil {
+		return nil, err
 	}
 
-	var h ObjectHeader
-	{
-		x, err := getString("apiVersion")
-		if err != nil {
-			return nil, err
-		}
-		h.APIVersion = x
-	}
-	{
-		x, err := getString("kind")
-		if err != nil {
-			return nil, err
-		}
-		h.Kind = x
+	metaMap, err := extractMetadataMap(obj)
+	if err != nil {
+		return nil, err
 	}
 
-	meta, ok := obj["metadata"]
-	if !ok {
-		return nil, fmt.Errorf("metadata is missing: %w", ErrLoadObject)
+	name, err := getRequiredString(metaMap, "name")
+	if err != nil {
+		return nil, err
 	}
+	namespace, _ := getRequiredString(metaMap, "namespace")
 
-	var (
-		metav  map[string]any
-		metav2 map[any]any
-	)
-	if v, ok := meta.(map[string]any); ok {
-		metav = v
-	}
-	if metaMapSlice, ok := meta.(yaml.MapSlice); ok {
-		metav2 = metaMapSlice.ToMap()
-	}
-	if len(metav) == 0 && len(metav2) == 0 {
-		return nil, fmt.Errorf("metadata is invalid: %#v: %w", meta, ErrLoadObject)
-	}
-
-	getString2 := func(key string) (string, error) {
-		var (
-			x  any
-			ok bool
-		)
-		if x, ok = metav[key]; !ok {
-			x, ok = metav2[key]
-		}
-		if !ok {
-			return "", fmt.Errorf("%s is missing: %w", key, ErrLoadObject)
-		}
-		v, ok := x.(string)
-		if !ok {
-			return "", fmt.Errorf("%s is not a string: %w", key, ErrLoadObject)
-		}
-		return v, nil
-	}
-	{
-		x, err := getString2("namespace")
-		if err != nil {
-			x = ""
-		}
-		h.Metadata.Namespace = x
-	}
-	{
-		x, err := getString2("name")
-		if err != nil {
-			return nil, err
-		}
-		h.Metadata.Name = x
+	h := ObjectHeader{
+		APIVersion: apiVersion,
+		Kind:       kind,
+		Metadata: ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
 	}
 
 	b, err := marshaler.Marshal(ctx, obj)
@@ -120,3 +70,38 @@ func LoadObjectFromMap(ctx context.Context, marshaler Marshaler, obj map[string]
 		Body:   string(b),
 	}, nil
 }
+
+func getRequiredString(m map[string]any, key string) (string, error) {
+	x, ok := m[key]
+	if !ok {
+		return "", fmt.Errorf("%s is missing: %w", key, ErrLoadObject)
+	}
+	v, ok := x.(string)
+	if !ok {
+		return "", fmt.Errorf("%s is not a string: %w", key, ErrLoadObject)
+	}
+	return v, nil
+}
+
+func extractMetadataMap(obj map[string]any) (map[string]any, error) {
+	meta, ok := obj["metadata"]
+	if !ok {
+		return nil, fmt.Errorf("metadata is missing: %w", ErrLoadObject)
+	}
+	if v, ok := meta.(map[string]any); ok && len(v) > 0 {
+		return v, nil
+	}
+	if metaMapSlice, ok := meta.(yaml.MapSlice); ok {
+		converted := make(map[string]any, len(metaMapSlice))
+		for _, item := range metaMapSlice {
+			if k, ok := item.Key.(string); ok {
+				converted[k] = item.Value
+			}
+		}
+		if len(converted) > 0 {
+			return converted, nil
+		}
+	}
+	return nil, fmt.Errorf("metadata is invalid: %#v: %w", meta, ErrLoadObject)
+}
+

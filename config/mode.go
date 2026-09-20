@@ -242,18 +242,6 @@ func (p *diffPrinter) printMarkdownDiff(ctx context.Context) error {
 		heading = func(n int) string {
 			return strings.Repeat("#", n+int(p.markdownHeadingLevel))
 		}
-		diffTypeAsString = func(x internal.DiffType) string {
-			switch x {
-			case internal.DiffTypeAdd:
-				return "add"
-			case internal.DiffTypeChange:
-				return "change"
-			case internal.DiffTypeDestroy:
-				return "destroy"
-			default:
-				return "unknown"
-			}
-		}
 		summaryNoDiff = fmt.Sprintf(`%s Objdiff Summary
 
 %s <-> %s
@@ -273,9 +261,9 @@ No changes.`,
 			heading(0),
 			"`{{ .Left }}`",
 			"`{{ .Right }}`",
-			diffTypeAsString(internal.DiffTypeAdd),
-			diffTypeAsString(internal.DiffTypeChange),
-			diffTypeAsString(internal.DiffTypeDestroy),
+			internal.DiffTypeAdd,
+			internal.DiffTypeChange,
+			internal.DiffTypeDestroy,
 		)
 		diffTmpl = fmt.Sprintf(`{{ range . }}
 %s {{ .DiffType }} %s
@@ -322,7 +310,7 @@ No changes.`,
 		items = append(items, Item{
 			ID:       d.Pair.ID,
 			Diff:     d.Diff,
-			DiffType: diffTypeAsString(d.Type),
+			DiffType: d.Type.String(),
 		})
 	}
 
