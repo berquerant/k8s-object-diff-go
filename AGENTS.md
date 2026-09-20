@@ -30,6 +30,12 @@ Standard text diff tools compare files line-by-line, which often yields messy or
   - `markdown`: Rich Markdown output with collapsible `<details>` blocks for diffs and summary tables, suitable for PR comments or CI reports.
 - **Custom Differ Integration (`-x / --diff-cmd` or `DIFFCMD`)**: Uses a built-in diff engine based on `sergi/go-diff` by default, but allows executing external diff tools (e.g. `diff`).
 - **Flexible Input Handling**: Supports stdin (`-`), custom Object ID separators (`-d`), custom context line count (`-C`), label overrides (`-L`), and tolerates duplicate map keys (`--allow-duplicate-key`).
+- **Filtering Capabilities**:
+  - Regular expression line filtering (`-i / --ignore-matching-lines`).
+  - Field deletion via path or yq expressions (`-f / --ignore-field`).
+  - Label key deletion (`-l / --ignore-label`) and annotation key deletion (`-a / --ignore-annotation`).
+  - Convenient flags to ignore `metadata.managedFields` (`-m`) and `status` (`-s`).
+- **MCP Server Support (`--mcp`)**: Runs as a Model Context Protocol server exposing `diff_k8s_manifests` over stdio for AI agent workflows.
 - **Standard Exit Codes**: Exits with `0` when inputs are identical, `1` when diffs exist (unless `--success` is specified), and `2` on error.
 
 ---
@@ -40,8 +46,8 @@ Standard text diff tools compare files line-by-line, which often yields messy or
 .
 ├── cmd/
 │   └── objdiff/            # CLI binary main entry point
-├── config/                 # Command-line configuration, runner, output formatting modes, and help doc generator
-├── internal/               # Core domain logic, object parsing, diff calculations, and marshaling
+├── config/                 # Command-line configuration, runner, MCP server, output formatting modes, and help doc generator
+├── internal/               # Core domain logic, object parsing, diff calculations, yq/line filtering, and marshaling
 ├── version/                # Version string definition
 ├── tests/                  # Test data and fixtures for diff comparison
 ├── bin/                    # Helper shell scripts (build, README generation, licensing)
@@ -52,12 +58,13 @@ Standard text diff tools compare files line-by-line, which often yields messy or
 ### Key Packages & Responsibilities
 
 #### 1. `cmd/objdiff`
-- [main.go](cmd/objdiff/main.go): Parses CLI flags using `spf13/pflag`, builds the `config.Config` struct, handles stdin resolution, executes `config.Run`, renders flag usage in markdown code blocks, and manages process exit codes.
+- [main.go](cmd/objdiff/main.go): Parses CLI flags using `spf13/pflag` and `berquerant/structconfig`, handles stdin resolution, executes `config.Run` or starts MCP server, renders flag usage in markdown code blocks, and manages process exit codes.
 
 #### 2. `config`
 - [config.go](config/config.go): Defines `Config` struct, output modes (`OutModeText`, `OutModeYaml`, etc.), and instantiates built-in or external differ engines.
+- [mcp.go](config/mcp.go): Implements MCP server running over stdio, registering the `diff_k8s_manifests` tool and executing diff calculations with parameter overrides.
 - [help.go](config/help.go): Builds structured markdown documentation and CLI help texts using `Help` and `MarkdownDoc`.
-- [run.go](config/run.go): Orchestrates the end-to-end execution flow — loading objects from left/right sources into map structures, calculating pairs, and initializing diff printing.
+- [run.go](config/run.go): Orchestrates the end-to-end execution flow — loading objects from left/right sources into map structures, applying line/yq filters, calculating pairs, and initializing diff printing.
 - [mode.go](config/mode.go): Implements `diffPrinter`, formatting diff results for each supported output mode (text, YAML, markdown, ID summaries).
 
 #### 3. `internal`
@@ -67,6 +74,8 @@ Standard text diff tools compare files line-by-line, which often yields messy or
 - [pair.go](internal/pair.go): Manages `ObjectPair` and `ObjectPairMap`, linking left and right objects by ID and identifying diff types (`add`, `change`, `destroy`).
 - [diff.go](internal/diff.go): Defines the `Differ` interface, `ObjectDiffBuilder`, and unified diff line parsing/rendering.
 - [diffmatchpatch.go](internal/diffmatchpatch.go): Implements `DMPDiffer` wrapping `github.com/sergi/go-diff/diffmatchpatch`.
+- [filter.go](internal/filter.go): Provides regex-based line filtering (`LineFilter`) ignoring matching lines.
+- [yq_filter.go](internal/yq_filter.go): Evaluates YAML transformation expressions using `mikefarah/yq/v4` (`YqFilter`) to ignore fields, labels, and annotations.
 - [command.go](internal/command.go): Provides command string escaping utilities for executing external diff tools safely via `al.essio.dev/pkg/shellescape`.
 - [color.go](internal/color.go), [map.go](internal/map.go), [string.go](internal/string.go): Auxiliary utilities for ANSI terminal color styling, map processing, and string handling.
 
@@ -81,6 +90,9 @@ Primary dependencies declared in `go.mod`:
 - **`github.com/goccy/go-yaml`**: High-performance YAML parser/encoder supporting flexible options (e.g. duplicate map key tolerance).
 - **`github.com/sergi/go-diff`**: Go implementation of diff-match-patch for textual line/character diff calculations.
 - **`github.com/spf13/pflag`**: POSIX-compliant command-line flag parsing.
+- **`github.com/berquerant/structconfig`**: Struct-based configuration binding and environment variable resolution.
+- **`github.com/mikefarah/yq/v4`**: Expression-based YAML filtering for ignoring fields, labels, and annotations.
+- **`github.com/modelcontextprotocol/go-sdk`**: MCP server implementation exposing tools over stdio.
 - **`al.essio.dev/pkg/shellescape`**: Safe shell argument escaping when invoking external diff commands.
 - **`github.com/stretchr/testify`**: Testing framework assertions (`assert`, `require`).
 

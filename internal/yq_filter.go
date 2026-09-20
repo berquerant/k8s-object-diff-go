@@ -52,26 +52,22 @@ func NewFieldFilter(fieldPaths []string) *YqFilter {
 
 // NewLabelFilter creates a [YqFilter] for removing label keys across metadata and nested pod templates.
 func NewLabelFilter(labelKeys []string) *YqFilter {
-	if len(labelKeys) == 0 {
-		return nil
-	}
-	exprs := make([]string, len(labelKeys))
-	for i, k := range labelKeys {
-		k = strings.TrimSpace(k)
-		exprs[i] = fmt.Sprintf(`del(.. | .labels?."%s"?)`, escapeYqString(k))
-	}
-	return NewYqFilter(exprs)
+	return newMapKeyFilter("labels", labelKeys)
 }
 
 // NewAnnotationFilter creates a [YqFilter] for removing annotation keys across metadata and nested templates.
 func NewAnnotationFilter(annotationKeys []string) *YqFilter {
-	if len(annotationKeys) == 0 {
+	return newMapKeyFilter("annotations", annotationKeys)
+}
+
+func newMapKeyFilter(mapName string, keys []string) *YqFilter {
+	if len(keys) == 0 {
 		return nil
 	}
-	exprs := make([]string, len(annotationKeys))
-	for i, k := range annotationKeys {
+	exprs := make([]string, len(keys))
+	for i, k := range keys {
 		k = strings.TrimSpace(k)
-		exprs[i] = fmt.Sprintf(`del(.. | .annotations?."%s"?)`, escapeYqString(k))
+		exprs[i] = fmt.Sprintf(`del(.. | .%s?."%s"?)`, mapName, escapeYqString(k))
 	}
 	return NewYqFilter(exprs)
 }
