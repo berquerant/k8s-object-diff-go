@@ -2,12 +2,15 @@ package config
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"strings"
 	"text/template"
 
+	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/berquerant/k8s-object-diff-go/internal"
 )
 
@@ -25,6 +28,7 @@ type diffPrinter struct {
 	verbose              bool
 	markdownHeadingLevel uint
 	markdownTitle        string
+	markdownTemplate     string
 }
 
 func (p *diffPrinter) print(ctx context.Context) error {
@@ -105,14 +109,32 @@ func (p *diffPrinter) collectDiffs(ctx context.Context) ([]*internal.ObjectDiff,
 	return result, nil
 }
 
-// diffStats holds counts of each diff type.
-type diffStats struct {
+// DiffStats holds counts of each diff type.
+type DiffStats struct {
 	Add, Change, Destroy int
 }
 
+// MarkdownTemplateData is the root data passed to custom markdown templates.
+type MarkdownTemplateData struct {
+	Left    string
+	Right   string
+	HasDiff bool
+	Stats   DiffStats
+	Diffs   []*MarkdownDiffItem
+}
+
+// MarkdownDiffItem represents a diff of an object for custom markdown templates.
+type MarkdownDiffItem struct {
+	ID       string
+	Diff     string
+	DiffType string
+	Left     *internal.Object
+	Right    *internal.Object
+}
+
 // countDiffStats aggregates add/change/destroy counts from a slice of ObjectDiffs.
-func countDiffStats(diffs []*internal.ObjectDiff) diffStats {
-	var s diffStats
+func countDiffStats(diffs []*internal.ObjectDiff) DiffStats {
+	var s DiffStats
 	for _, d := range diffs {
 		switch d.Type {
 		case internal.DiffTypeAdd:
@@ -263,7 +285,76 @@ func (p *diffPrinter) renderMarkdownTitle() (string, error) {
 	return buf.String(), nil
 }
 
+func resolveMarkdownTemplate(input string) (string, error) {
+	if strings.HasPrefix(input, "@@") {
+		return input[1:], nil
+	}
+	if strings.HasPrefix(input, "@") {
+		filePath := input[1:]
+		if filePath == "" {
+			return "", errors.New("empty markdown template file path")
+		}
+		b, err := os.ReadFile(filePath)
+		if err != nil {
+			return "", fmt.Errorf("failed to read markdown template file %q: %w", filePath, err)
+		}
+		return string(b), nil
+	}
+	return input, nil
+}
+
+func (p *diffPrinter) printCustomMarkdownDiff(ctx context.Context) error {
+	tmplContent, err := resolveMarkdownTemplate(p.markdownTemplate)
+	if err != nil {
+		return err
+	}
+
+	tmpl, err := template.New("markdown").Funcs(sprig.TxtFuncMap()).Parse(tmplContent)
+	if err != nil {
+		return fmt.Errorf("failed to parse markdown template: %w", err)
+	}
+
+	diffs, err := p.collectDiffs(ctx)
+	if err != nil {
+		return err
+	}
+
+	stats := countDiffStats(diffs)
+	items := make([]*MarkdownDiffItem, 0, len(diffs))
+	for _, d := range diffs {
+		items = append(items, &MarkdownDiffItem{
+			ID:       d.Pair.ID,
+			Diff:     d.Diff,
+			DiffType: d.Type.String(),
+			Left:     d.Pair.Left,
+			Right:    d.Pair.Right,
+		})
+	}
+
+	data := MarkdownTemplateData{
+		Left:    p.left,
+		Right:   p.right,
+		HasDiff: len(diffs) > 0,
+		Stats:   stats,
+		Diffs:   items,
+	}
+
+	if err := tmpl.Execute(p.out, data); err != nil {
+		return fmt.Errorf("failed to execute markdown template: %w", err)
+	}
+
+	if len(diffs) == 0 {
+		return nil
+	}
+	return ErrDiffFound
+}
+
 func (p *diffPrinter) printMarkdownDiff(ctx context.Context) error {
+	if p.markdownTemplate != "" {
+		slog.Debug("markdown-template is specified; markdown-heading and markdown-title are ignored")
+		return p.printCustomMarkdownDiff(ctx)
+	}
+
 	title, err := p.renderMarkdownTitle()
 	if err != nil {
 		return err

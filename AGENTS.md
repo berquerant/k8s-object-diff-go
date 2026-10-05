@@ -63,7 +63,7 @@ Standard text diff tools compare files line-by-line, which often yields messy or
 #### 2. `config`
 - [config.go](config/config.go): Defines `Config` struct, output modes (`OutModeText`, `OutModeYaml`, etc.), and instantiates built-in or external differ engines.
 - [mcp.go](config/mcp.go): Implements MCP server running over stdio, registering the `diff_k8s_manifests` tool and executing diff calculations with parameter overrides.
-- [help.go](config/help.go): Builds structured markdown documentation and CLI help texts using `Help` and `MarkdownDoc`.
+- [help.go](config/help.go): Builds structured markdown documentation and CLI help texts using `text/template`.
 - [run.go](config/run.go): Orchestrates the end-to-end execution flow — loading objects from left/right sources into map structures, applying line/yq filters, calculating pairs, and initializing diff printing.
 - [mode.go](config/mode.go): Implements `diffPrinter`, formatting diff results for each supported output mode (text, YAML, markdown, ID summaries).
 

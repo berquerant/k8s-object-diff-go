@@ -78,6 +78,59 @@ Left file <-> Right file
 No changes.
 ```
 
+You can customize markdown output by specifying a Go template string or file (`@file`) via `--markdown-template`.
+Sprig template functions (https://masterminds.github.io/sprig/) are available.
+
+#### Template Variables
+
+Root context (`.`):
+- `.Left`: Left input file name or label (`string`).
+- `.Right`: Right input file name or label (`string`).
+- `.HasDiff`: `true` if differences were found (`bool`).
+- `.Stats`: Diff count statistics (`DiffStats`).
+  - `.Stats.Add`: Count of added objects (`int`).
+  - `.Stats.Change`: Count of changed objects (`int`).
+  - `.Stats.Destroy`: Count of destroyed objects (`int`).
+- `.Diffs`: List of diff items (`[]*MarkdownDiffItem`).
+  - `.ID`: Object ID string (e.g. `apps/v1>Deployment>default>nginx`).
+  - `.Diff`: Unified diff string.
+  - `.DiffType`: Diff type (`"add"`, `"change"`, `"destroy"`).
+  - `.Left`: Left Kubernetes object before changes (or `nil` if added).
+    - `.Header.APIVersion`: `apiVersion` (`string`).
+    - `.Header.Kind`: `kind` (`string`).
+    - `.Header.Metadata.Namespace`: `metadata.namespace` (`string`).
+    - `.Header.Metadata.Name`: `metadata.name` (`string`).
+    - `.Body`: Manifest YAML string (`string`).
+  - `.Right`: Right Kubernetes object after changes (or `nil` if destroyed). Same fields as `.Left`.
+
+Example (reproducing the default markdown output):
+
+````gotemplate
+# Objdiff Summary: {{ .Left }} <-> {{ .Right }}
+
+{{ if not .HasDiff -}}
+{{ .Left }} <-> {{ .Right }}
+
+No changes.
+{{ else -}}
+`{{ .Left }}` <-> `{{ .Right }}`
+
+| **add** | **change** | **destroy** |
+| :---: | :---: | :---: |
+| {{ .Stats.Add }} | {{ .Stats.Change }} | {{ .Stats.Destroy }} |
+{{- range .Diffs }}
+## {{ .DiffType }} `{{ .ID }}`
+
+<details><summary>View Diff</summary>
+
+``` diff
+{{ .Diff }}```
+
+</details>
+{{ end -}}
+{{ end }}
+````
+
 ## Exit status
 
 0 if inputs are the same.
@@ -129,6 +182,7 @@ e.g. --ignore-matching-lines -> OBJDIFF_IGNORE_MATCHING_LINES
   -n, --indent int                          yaml indent (default 2)
   -L, --label stringArray                   use label instead of file name (may be separated by ';' or specified multiple times)
       --markdown-heading uint               highest heading level in markdown (default 1)
+      --markdown-template string            go template string or file (prefix with '@') for markdown output; ignores markdown-heading and markdown-title
       --markdown-title string               title in markdown summary; template variables: LEFT_FILE, RIGHT_FILE (default "Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}")
       --mcp                                 start MCP server over stdio
   -o, --out string                          output format: text,yaml,id,idlist,markdown (default "text")

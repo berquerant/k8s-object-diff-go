@@ -25,6 +25,7 @@ type Config struct {
 	Labels               []string  `name:"label" short:"L" split:"true" sep:";" usage:"use label instead of file name (may be separated by ';' or specified multiple times)"`
 	MarkdownHeadingLevel uint      `name:"markdown-heading" default:"1" usage:"highest heading level in markdown"`
 	MarkdownTitle        string    `name:"markdown-title" default:"Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}" usage:"title in markdown summary; template variables: LEFT_FILE, RIGHT_FILE"`
+	MarkdownTemplate     string    `name:"markdown-template" usage:"go template string or file (prefix with '@') for markdown output; ignores markdown-heading and markdown-title"`
 	Stdin                io.Reader `name:"-"`
 	IgnoreMatchingLines  []string  `name:"ignore-matching-lines" short:"i" split:"true" sep:";" usage:"ignore lines matching regexp (may be separated by ';' or specified multiple times)"`
 	IgnoreFields         []string  `name:"ignore-field" short:"f" split:"true" sep:";" usage:"ignore field by path or yq expression (may be separated by ';' or specified multiple times)"`

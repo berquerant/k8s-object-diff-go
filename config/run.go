@@ -142,6 +142,7 @@ func (c *Config) runWithReadersAndLabels(ctx context.Context, w io.Writer, leftR
 		verbose:              c.Verbose,
 		markdownHeadingLevel: headingLevel,
 		markdownTitle:        c.MarkdownTitle,
+		markdownTemplate:     c.MarkdownTemplate,
 	}
 
 	return printer.print(ctx)

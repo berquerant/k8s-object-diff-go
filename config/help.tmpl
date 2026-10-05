@@ -104,29 +104,29 @@ Root context (`.`):
 Example (reproducing the default markdown output):
 
 ````gotemplate
-# Objdiff Summary: {{ .Left }} <-> {{ .Right }}
+# Objdiff Summary: {{ "{{ .Left }}" }} <-> {{ "{{ .Right }}" }}
 
-{{ if not .HasDiff -}}
-{{ .Left }} <-> {{ .Right }}
+{{ "{{ if not .HasDiff -}}" }}
+{{ "{{ .Left }}" }} <-> {{ "{{ .Right }}" }}
 
 No changes.
-{{ else -}}
-`{{ .Left }}` <-> `{{ .Right }}`
+{{ "{{ else -}}" }}
+`{{ "{{ .Left }}" }}` <-> `{{ "{{ .Right }}" }}`
 
 | **add** | **change** | **destroy** |
 | :---: | :---: | :---: |
-| {{ .Stats.Add }} | {{ .Stats.Change }} | {{ .Stats.Destroy }} |
-{{- range .Diffs }}
-## {{ .DiffType }} `{{ .ID }}`
+| {{ "{{ .Stats.Add }}" }} | {{ "{{ .Stats.Change }}" }} | {{ "{{ .Stats.Destroy }}" }} |
+{{ "{{- range .Diffs }}" }}
+## {{ "{{ .DiffType }}" }} `{{ "{{ .ID }}" }}`
 
 <details><summary>View Diff</summary>
 
 ``` diff
-{{ .Diff }}```
+{{ "{{ .Diff }}" }}```
 
 </details>
-{{ end -}}
-{{ end }}
+{{ "{{ end -}}" }}
+{{ "{{ end }}" }}
 ````
 
 ## Exit status
