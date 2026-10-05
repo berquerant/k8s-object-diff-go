@@ -27,7 +27,8 @@ Standard text diff tools compare files line-by-line, which often yields messy or
   - `yaml`: Array of structured diff objects containing ID, diff string, diff type (`add`, `change`, `destroy`), and object content.
   - `id`: Diff formatted at the Object ID level.
   - `idlist`: Lists all Object IDs found in the inputs.
-  - `markdown`: Rich Markdown output with collapsible `<details>` blocks for diffs and summary tables, suitable for PR comments or CI reports. Supports custom templates via `--markdown-template` (inline string or `@file` path) powered by Go `text/template` and Sprig functions.
+  - `markdown`: Rich Markdown output with collapsible `<details>` blocks for diffs and summary tables, suitable for PR comments or CI reports.
+  - `template`: Formats diff output using custom Go templates specified via `--template` (`-T`) powered by Go `text/template` and Sprig functions.
 - **Custom Differ Integration (`-x / --diff-cmd` or `DIFFCMD`)**: Uses a built-in diff engine based on `sergi/go-diff` by default, but allows executing external diff tools (e.g. `diff`).
 - **Flexible Input Handling**: Supports stdin (`-`), custom Object ID separators (`-d`), custom context line count (`-C`), label overrides (`-L`), and tolerates duplicate map keys (`--allow-duplicate-key`).
 - **Filtering Capabilities**:
@@ -106,12 +107,14 @@ flowchart TD
         OutText["Text Mode (`-o text`)<br/>Unified diff with color/summary"]
         OutYAML["YAML Mode (`-o yaml`)<br/>Structured diff objects array"]
         OutID["ID / IDList Mode (`-o id / idlist`)<br/>Object ID level diffs & lists"]
-        OutMD["Markdown Mode (`-o markdown`)<br/>- Collapsible &lt;details&gt; summary<br/>- Custom template via `--markdown-template`"]
+        OutMD["Markdown Mode (`-o markdown`)<br/>Collapsible &lt;details&gt; summary"]
+        OutTemplate["Template Mode (`-o template`)<br/>Custom Go template via `--template`"]
         
         Printer --> OutText
         Printer --> OutYAML
         Printer --> OutID
         Printer --> OutMD
+        Printer --> OutTemplate
     end
 
     CLI --> Runner

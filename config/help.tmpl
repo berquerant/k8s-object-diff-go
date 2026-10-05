@@ -76,7 +76,10 @@ Left file <-> Right file
 No changes.
 ```
 
-You can customize markdown output by specifying a Go template string or file (`@file`) via `--markdown-template`.
+### template
+
+Formats diff output using a Go template string or file (`@file`, `@@` to escape leading `@`) specified via `--template` (`-T`).
+`--template` is required for template mode and cannot be used with other modes.
 Sprig template functions (https://masterminds.github.io/sprig/) are available.
 
 #### Template Variables
@@ -89,7 +92,7 @@ Root context (`.`):
   - `.Stats.Add`: Count of added objects (`int`).
   - `.Stats.Change`: Count of changed objects (`int`).
   - `.Stats.Destroy`: Count of destroyed objects (`int`).
-- `.Diffs`: List of diff items (`[]*MarkdownDiffItem`).
+- `.Diffs`: List of diff items (`[]*TemplateDiffItem`).
   - `.ID`: Object ID string (e.g. `apps/v1>Deployment>default>nginx`).
   - `.Diff`: Unified diff string.
   - `.DiffType`: Diff type (`"add"`, `"change"`, `"destroy"`).

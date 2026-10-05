@@ -14,7 +14,7 @@ type Config struct {
 	Context              int       `name:"context" short:"C" default:"3" usage:"diff context"`
 	Separator            string    `name:"separator" short:"d" default:">" usage:"object id separator"`
 	Indent               int       `name:"indent" short:"n" default:"2" usage:"yaml indent"`
-	Out                  string    `name:"out" short:"o" default:"text" usage:"output format: text,yaml,id,idlist,markdown"`
+	Out                  string    `name:"out" short:"o" default:"text" usage:"output format: text,yaml,id,idlist,markdown,template"`
 	Debug                bool      `name:"debug" usage:"enable debug log"`
 	Quiet                bool      `name:"quiet" short:"q" usage:"quiet log"`
 	Color                bool      `name:"color" short:"c" usage:"colored diff"`
@@ -25,7 +25,7 @@ type Config struct {
 	Labels               []string  `name:"label" short:"L" split:"true" sep:";" usage:"use label instead of file name (may be separated by ';' or specified multiple times)"`
 	MarkdownHeadingLevel uint      `name:"markdown-heading" default:"1" usage:"highest heading level in markdown"`
 	MarkdownTitle        string    `name:"markdown-title" default:"Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}" usage:"title in markdown summary; template variables: LEFT_FILE, RIGHT_FILE"`
-	MarkdownTemplate     string    `name:"markdown-template" usage:"go template string or file (prefix with '@') for markdown output; ignores markdown-heading and markdown-title"`
+	Template             string    `name:"template" short:"T" usage:"template string or file (prefix with '@') for template output mode"`
 	Stdin                io.Reader `name:"-"`
 	IgnoreMatchingLines  []string  `name:"ignore-matching-lines" short:"i" split:"true" sep:";" usage:"ignore lines matching regexp (may be separated by ';' or specified multiple times)"`
 	IgnoreFields         []string  `name:"ignore-field" short:"f" split:"true" sep:";" usage:"ignore field by path or yq expression (may be separated by ';' or specified multiple times)"`
@@ -45,6 +45,7 @@ const (
 	OutModeID       OutMode = "id"
 	OutModeIDList   OutMode = "idlist"
 	OutModeMarkdown OutMode = "markdown"
+	OutModeTemplate OutMode = "template"
 )
 
 func (c *Config) OutMode() OutMode {
@@ -59,6 +60,8 @@ func (c *Config) OutMode() OutMode {
 		return OutModeIDList
 	case string(OutModeMarkdown):
 		return OutModeMarkdown
+	case string(OutModeTemplate):
+		return OutModeTemplate
 	default:
 		return OutModeUnknown
 	}

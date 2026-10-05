@@ -1,2 +1,0 @@
---markdown-template
-@tests/diffs-markdown-template/template.tmpl

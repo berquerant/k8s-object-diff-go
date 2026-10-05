@@ -233,7 +233,7 @@ data:
 	})
 }
 
-func TestMarkdownTemplate(t *testing.T) {
+func TestTemplateMode(t *testing.T) {
 	const (
 		manifest1 = `apiVersion: v1
 kind: ConfigMap
@@ -286,16 +286,41 @@ No changes.
 	var defaultNoDiffBuf bytes.Buffer
 	assert.NoError(t, (&config.Config{Out: string(config.OutModeMarkdown)}).Run(&defaultNoDiffBuf, leftFile, leftFile))
 
+	t.Run("template required for template mode", func(t *testing.T) {
+		var c config.Config
+		c.Out = string(config.OutModeTemplate)
+		var got bytes.Buffer
+		err := c.Run(&got, leftFile, rightFile)
+		assert.Error(t, err)
+		assert.Equal(t, "--template is required for template mode", err.Error())
+	})
+
+	for _, mode := range []config.OutMode{
+		config.OutModeText,
+		config.OutModeYaml,
+		config.OutModeID,
+		config.OutModeIDList,
+		config.OutModeMarkdown,
+	} {
+		t.Run(fmt.Sprintf("template not allowed for %s mode", mode), func(t *testing.T) {
+			var c config.Config
+			c.Out = string(mode)
+			c.Template = "test"
+			var got bytes.Buffer
+			err := c.Run(&got, leftFile, rightFile)
+			assert.Error(t, err)
+			assert.Equal(t, "--template is only allowed with template mode", err.Error())
+		})
+	}
+
 	for _, tc := range []struct {
-		name         string
-		left, right  string
-		template     string
-		headingLevel uint
-		title        string
-		wantErr      error
-		errContains  string
-		want         string
-		wantExact    bool
+		name        string
+		left, right string
+		template    string
+		wantErr     error
+		errContains string
+		want        string
+		wantExact   bool
 	}{
 		{
 			name:      "reproduce default markdown output on diff",
@@ -343,44 +368,31 @@ No changes.
 			wantExact: true,
 		},
 		{
-			name:         "markdown-heading and markdown-title are ignored",
-			left:         leftFile,
-			right:        rightFile,
-			template:     "CustomOutput: {{ .Stats.Change }}",
-			headingLevel: 4,
-			title:        "Should be ignored",
-			wantErr:      config.ErrDiffFound,
-			want:         "CustomOutput: 1",
-			wantExact:    true,
-		},
-		{
 			name:        "error empty file path after @",
 			left:        leftFile,
 			right:       rightFile,
 			template:    "@",
-			errContains: "empty markdown template file path",
+			errContains: "empty template file path",
 		},
 		{
 			name:        "error reading nonexistent file",
 			left:        leftFile,
 			right:       rightFile,
 			template:    "@" + filepath.Join(dir, "nonexistent.tmpl"),
-			errContains: "failed to read markdown template file",
+			errContains: "failed to read template file",
 		},
 		{
 			name:        "error invalid template syntax",
 			left:        leftFile,
 			right:       rightFile,
 			template:    "{{ .Unclosed",
-			errContains: "failed to parse markdown template",
+			errContains: "failed to parse template",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var c config.Config
-			c.Out = string(config.OutModeMarkdown)
-			c.MarkdownTemplate = tc.template
-			c.MarkdownHeadingLevel = tc.headingLevel
-			c.MarkdownTitle = tc.title
+			c.Out = string(config.OutModeTemplate)
+			c.Template = tc.template
 
 			var got bytes.Buffer
 			err := c.Run(&got, tc.left, tc.right)
