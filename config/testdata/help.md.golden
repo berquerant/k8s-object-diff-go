@@ -79,6 +79,34 @@ No changes.
 You can customize markdown output by specifying a Go template string or file (`@file`) via `--markdown-template`.
 Sprig template functions (https://masterminds.github.io/sprig/) are available.
 
+Example (reproducing the default markdown output):
+
+````gotemplate
+# Objdiff Summary: {{ .Left }} <-> {{ .Right }}
+
+{{ if not .HasDiff -}}
+{{ .Left }} <-> {{ .Right }}
+
+No changes.
+{{ else -}}
+`{{ .Left }}` <-> `{{ .Right }}`
+
+| **add** | **change** | **destroy** |
+| :---: | :---: | :---: |
+| {{ .Stats.Add }} | {{ .Stats.Change }} | {{ .Stats.Destroy }} |
+{{- range .Diffs }}
+## {{ .DiffType }} `{{ .ID }}`
+
+<details><summary>View Diff</summary>
+
+``` diff
+{{ .Diff }}```
+
+</details>
+{{ end -}}
+{{ end }}
+````
+
 ## Exit status
 
 0 if inputs are the same.
