@@ -27,7 +27,7 @@ Standard text diff tools compare files line-by-line, which often yields messy or
   - `yaml`: Array of structured diff objects containing ID, diff string, diff type (`add`, `change`, `destroy`), and object content.
   - `id`: Diff formatted at the Object ID level.
   - `idlist`: Lists all Object IDs found in the inputs.
-  - `markdown`: Rich Markdown output with collapsible `<details>` blocks for diffs and summary tables, suitable for PR comments or CI reports.
+  - `markdown`: Rich Markdown output with collapsible `<details>` blocks for diffs and summary tables, suitable for PR comments or CI reports. Supports custom templates via `--markdown-template` (inline string or `@file` path) powered by Go `text/template` and Sprig functions.
 - **Custom Differ Integration (`-x / --diff-cmd` or `DIFFCMD`)**: Uses a built-in diff engine based on `sergi/go-diff` by default, but allows executing external diff tools (e.g. `diff`).
 - **Flexible Input Handling**: Supports stdin (`-`), custom Object ID separators (`-d`), custom context line count (`-C`), label overrides (`-L`), and tolerates duplicate map keys (`--allow-duplicate-key`).
 - **Filtering Capabilities**:
@@ -47,9 +47,10 @@ Standard text diff tools compare files line-by-line, which often yields messy or
 ├── cmd/
 │   └── objdiff/            # CLI binary main entry point
 ├── config/                 # Command-line configuration, runner, MCP server, output formatting modes, and help doc generator
+│   └── help.tmpl           # Embedded Markdown template source for CLI help and documentation
 ├── internal/               # Core domain logic, object parsing, diff calculations, yq/line filtering, and marshaling
 ├── version/                # Version string definition
-├── tests/                  # Test data and fixtures for diff comparison
+├── tests/                  # Test data and fixtures for diff comparison (golden tests)
 ├── bin/                    # Helper shell scripts (build, README generation, licensing)
 ├── Makefile                # Target automation for build, lint, test, etc.
 └── go.mod                  # Go module definition and dependencies
@@ -63,9 +64,9 @@ Standard text diff tools compare files line-by-line, which often yields messy or
 #### 2. `config`
 - [config.go](config/config.go): Defines `Config` struct, output modes (`OutModeText`, `OutModeYaml`, etc.), and instantiates built-in or external differ engines.
 - [mcp.go](config/mcp.go): Implements MCP server running over stdio, registering the `diff_k8s_manifests` tool and executing diff calculations with parameter overrides.
-- [help.go](config/help.go): Builds structured markdown documentation and CLI help texts using `text/template`.
+- [help.go](config/help.go), [help.tmpl](config/help.tmpl): Builds structured markdown documentation and CLI help texts using `text/template` and `//go:embed`.
 - [run.go](config/run.go): Orchestrates the end-to-end execution flow — loading objects from left/right sources into map structures, applying line/yq filters, calculating pairs, and initializing diff printing.
-- [mode.go](config/mode.go): Implements `diffPrinter`, formatting diff results for each supported output mode (text, YAML, markdown, ID summaries).
+- [mode.go](config/mode.go): Implements `diffPrinter`, formatting diff results for each supported output mode (text, YAML, markdown, ID summaries) and executing custom Go templates with Sprig functions.
 
 #### 3. `internal`
 - [object.go](internal/object.go): Defines `Header` (`APIVersion`, `Kind`, `Namespace`, `Name`), `Object`, and the logic to generate an Object ID string.
@@ -89,6 +90,7 @@ Standard text diff tools compare files line-by-line, which often yields messy or
 Primary dependencies declared in `go.mod`:
 - **`github.com/goccy/go-yaml`**: High-performance YAML parser/encoder supporting flexible options (e.g. duplicate map key tolerance).
 - **`github.com/sergi/go-diff`**: Go implementation of diff-match-patch for textual line/character diff calculations.
+- **`github.com/Masterminds/sprig/v3`**: Comprehensive template functions library enabling string manipulation, YAML/JSON conversion, and list/dict processing in custom Markdown templates.
 - **`github.com/spf13/pflag`**: POSIX-compliant command-line flag parsing.
 - **`github.com/berquerant/structconfig`**: Struct-based configuration binding and environment variable resolution.
 - **`github.com/mikefarah/yq/v4`**: Expression-based YAML filtering for ignoring fields, labels, and annotations.
@@ -113,6 +115,8 @@ Primary dependencies declared in `go.mod`:
 | `make golden` | Updates golden test files using `go test -update` across `config` and `cmd/objdiff` |
 | `make README.md` | Generates `README.md` via `./bin/readme.sh` |
 | `make check-readme` | Checks that `README.md` is up to date without diff |
+| `make $(THIRD_PARTY_LICENSES)` / `NOTICE` | Generates third-party license notice report via `./bin/license.sh report` |
+| `make check-licenses` | Checks that `NOTICE` is up to date without diff |
 | `make vuln` | Checks vulnerabilities using `govulncheck` |
 | `make bench` | Runs benchmark tests in `config/` and reports stats |
 
@@ -132,8 +136,10 @@ make golden
 ## 6. Guidelines for AI Agents
 
 When working on this codebase:
-1. **Maintain Clean Package Boundaries**: Keep YAML parsing logic within `internal/yaml.go`, diff generation inside `internal/diff.go`, help documentation logic in `config/help.go`, and output rendering within `config/mode.go`.
+1. **Maintain Clean Package Boundaries**: Keep YAML parsing logic within `internal/yaml.go`, diff generation inside `internal/diff.go`, help documentation logic in `config/help.go` and `config/help.tmpl`, and output rendering within `config/mode.go`.
 2. **Preserve Exit Status Contract**: Exit status `0` means identical inputs; `1` means diffs found; `2` means error occurred (unless `--success` is toggled).
 3. **Verify Lint & Tests**: Always run `make test` and `make lint` after making changes. Ensure zero lint warnings or test regressions.
 4. **Golden Files & Documentation**: If output formatting or CLI help is updated, update golden test files via `make golden` and regenerate `README.md` via `make README.md`.
+5. **License Integrity**: If new dependencies are added to `go.mod`, update the third-party licenses report via `make NOTICE` (or `./bin/license.sh report > NOTICE`) and verify with `make check-licenses`.
+6. **Golden Test Structure**: When adding new E2E test cases under `tests/<case-name>/`, provide `left.yml`, `right.yml`, optional `arg.txt` (newline-delimited flag arguments), and generate expected golden outputs (`.id`, `.idlist`, `.txt`, `.yml`, `.md`) using `make golden`.
 
