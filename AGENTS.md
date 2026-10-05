@@ -56,6 +56,89 @@ Standard text diff tools compare files line-by-line, which often yields messy or
 └── go.mod                  # Go module definition and dependencies
 ```
 
+### Architecture & Processing Pipeline
+
+```mermaid
+flowchart TD
+    subgraph Inputs["1. Inputs & Entry Points"]
+        CLI["CLI (`cmd/objdiff`)<br/>`objdiff [flags] left.yml right.yml`"]
+        MCP["MCP Server (`config/mcp.go`)<br/>Tool: `diff_k8s_manifests`"]
+    end
+
+    subgraph Config["2. Orchestration (`config/run.go`)"]
+        Runner["config.Run / runWithReadersAndLabels"]
+    end
+
+    subgraph Pipeline["3. Ingestion & Filtering (`internal/`)"]
+        direction TB
+        LIn["Left Input YAML"] --> LLoad["LoadObjects (`load.go`)"]
+        RIn["Right Input YAML"] --> RLoad["LoadObjects (`load.go`)"]
+        
+        LLoad --> LLine["LineFilter (`filter.go`)"]
+        RLoad --> RLine["LineFilter (`filter.go`)"]
+        
+        LLine --> LYq["YqFilter (`yq_filter.go`)<br/>(fields, labels, annotations)"]
+        RLine --> RYq["YqFilter (`yq_filter.go`)<br/>(fields, labels, annotations)"]
+        
+        LYq --> LMap["Left ObjectMap<br/>(keyed by Object ID)"]
+        RYq --> RMap["Right ObjectMap<br/>(keyed by Object ID)"]
+    end
+
+    subgraph Pairing["4. Pairing & Diffing (`internal/`)"]
+        PairMap["ObjectPairMap (`pair.go`)<br/>Link objects by Object ID"]
+        LMap --> PairMap
+        RMap --> PairMap
+        
+        DiffBuilder["ObjectDiffBuilder (`diff.go`)"]
+        PairMap --> DiffBuilder
+        
+        DifferEngine["Differ Engine (`diffmatchpatch.go` / `diff.go`)<br/>- Built-in (sergi/go-diff)<br/>- External Process (-x / DIFFCMD)"]
+        DifferEngine --> DiffBuilder
+        
+        DiffResults["ObjectDiff Collection<br/>(add / change / destroy / unchange)"]
+        DiffBuilder --> DiffResults
+    end
+
+    subgraph Rendering["5. Output Formatting (`config/mode.go`)"]
+        Printer["diffPrinter.print()"]
+        DiffResults --> Printer
+        
+        OutText["Text Mode (`-o text`)<br/>Unified diff with color/summary"]
+        OutYAML["YAML Mode (`-o yaml`)<br/>Structured diff objects array"]
+        OutID["ID / IDList Mode (`-o id / idlist`)<br/>Object ID level diffs & lists"]
+        OutMD["Markdown Mode (`-o markdown`)<br/>- Collapsible &lt;details&gt; summary<br/>- Custom template via `--markdown-template`"]
+        
+        Printer --> OutText
+        Printer --> OutYAML
+        Printer --> OutID
+        Printer --> OutMD
+    end
+
+    CLI --> Runner
+    MCP --> Runner
+    Runner --> Pipeline
+    PairMap --> DiffBuilder
+```
+
+### Object Pairing & Diff Type Decision Logic
+
+```mermaid
+flowchart TD
+    Start["Evaluate each Object ID across Left and Right"] --> CheckLeft{"Left Object exists?"}
+    
+    CheckLeft -- No --> CheckRightAdd{"Right Object exists?"}
+    CheckRightAdd -- Yes --> DiffAdd["DiffType: <b>add</b> (created)"]
+    CheckRightAdd -- No --> Skip["Skip (Missing)"]
+    
+    CheckLeft -- Yes --> CheckRight{"Right Object exists?"}
+    CheckRight -- No --> DiffDestroy["DiffType: <b>destroy</b> (deleted)"]
+    CheckRight -- Yes --> CalcDiff["Execute Differ Engine on Bodies"]
+    
+    CalcDiff --> HasDiff{"Diff string non-empty?"}
+    HasDiff -- Yes --> DiffChange["DiffType: <b>change</b> (updated)"]
+    HasDiff -- No --> DiffUnchange["DiffType: <b>unchange</b> (identical, skipped in diff output)"]
+```
+
 ### Key Packages & Responsibilities
 
 #### 1. `cmd/objdiff`
