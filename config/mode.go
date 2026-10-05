@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -290,6 +291,9 @@ func resolveMarkdownTemplate(input string) (string, error) {
 	}
 	if strings.HasPrefix(input, "@") {
 		filePath := input[1:]
+		if filePath == "" {
+			return "", errors.New("empty markdown template file path")
+		}
 		b, err := os.ReadFile(filePath)
 		if err != nil {
 			return "", fmt.Errorf("failed to read markdown template file %q: %w", filePath, err)

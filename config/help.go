@@ -25,9 +25,7 @@ func getHelpTemplate() *template.Template {
 // HelpMarkdown returns the markdown help string.
 func HelpMarkdown() string {
 	var sb strings.Builder
-	if err := getHelpTemplate().Execute(&sb, nil); err != nil {
-		panic(err)
-	}
+	_ = getHelpTemplate().Execute(&sb, nil)
 	return sb.String()
 }
 

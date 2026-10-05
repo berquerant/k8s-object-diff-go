@@ -354,6 +354,13 @@ No changes.
 			wantExact:    true,
 		},
 		{
+			name:        "error empty file path after @",
+			left:        leftFile,
+			right:       rightFile,
+			template:    "@",
+			errContains: "empty markdown template file path",
+		},
+		{
 			name:        "error reading nonexistent file",
 			left:        leftFile,
 			right:       rightFile,
