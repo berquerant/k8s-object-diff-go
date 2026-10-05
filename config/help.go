@@ -134,7 +134,8 @@ or
 Left file <-> Right file
 
 No changes.
-` + "```"
+` + "```\n\n" + `You can customize markdown output by specifying a Go template string or file (` + "`@file`" + `) via ` + "`--markdown-template`" + `.
+Sprig template functions (https://masterminds.github.io/sprig/) are available.`
 }
 
 func (h *Help) OutputFormatSection() string {

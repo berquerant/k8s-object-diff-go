@@ -78,6 +78,9 @@ Left file <-> Right file
 No changes.
 ```
 
+You can customize markdown output by specifying a Go template string or file (`@file`) via `--markdown-template`.
+Sprig template functions (https://masterminds.github.io/sprig/) are available.
+
 ## Exit status
 
 0 if inputs are the same.
@@ -129,6 +132,7 @@ e.g. --ignore-matching-lines -> OBJDIFF_IGNORE_MATCHING_LINES
   -n, --indent int                          yaml indent (default 2)
   -L, --label stringArray                   use label instead of file name (may be separated by ';' or specified multiple times)
       --markdown-heading uint               highest heading level in markdown (default 1)
+      --markdown-template string            go template string or file (prefix with '@') for markdown output; ignores markdown-heading and markdown-title
       --markdown-title string               title in markdown summary; template variables: LEFT_FILE, RIGHT_FILE (default "Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}")
       --mcp                                 start MCP server over stdio
   -o, --out string                          output format: text,yaml,id,idlist,markdown (default "text")

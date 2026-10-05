@@ -233,3 +233,167 @@ data:
 	})
 }
 
+func TestMarkdownTemplate(t *testing.T) {
+	const (
+		manifest1 = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test
+data:
+  os: debian`
+		manifest2 = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test
+data:
+  os: ubuntu`
+	)
+
+	dir := t.TempDir()
+	leftFile := filepath.Join(dir, "left.yml")
+	rightFile := filepath.Join(dir, "right.yml")
+	require.NoError(t, os.WriteFile(leftFile, []byte(manifest1), 0o644))
+	require.NoError(t, os.WriteFile(rightFile, []byte(manifest2), 0o644))
+
+	tmplFile := filepath.Join(dir, "template.tmpl")
+	require.NoError(t, os.WriteFile(tmplFile, []byte("FILE: {{ .Stats.Change }} changes"), 0o644))
+
+	const defaultReproducedTemplate = `# Objdiff Summary: {{ .Left }} <-> {{ .Right }}
+
+{{ if not .HasDiff -}}
+{{ .Left }} <-> {{ .Right }}
+
+No changes.
+{{ else -}}
+` + "`" + `{{ .Left }}` + "`" + ` <-> ` + "`" + `{{ .Right }}` + "`" + `
+
+| **add** | **change** | **destroy** |
+| :---: | :---: | :---: |
+| {{ .Stats.Add }} | {{ .Stats.Change }} | {{ .Stats.Destroy }} |
+{{- range .Diffs }}
+## {{ .DiffType }} ` + "`" + `{{ .ID }}` + "`" + `
+
+<details><summary>View Diff</summary>
+
+` + "``` diff\n" + `{{ .Diff }}` + "```\n" + `
+</details>
+{{ end -}}
+{{ end }}`
+
+	var defaultDiffBuf bytes.Buffer
+	assert.ErrorIs(t, (&config.Config{Out: string(config.OutModeMarkdown)}).Run(&defaultDiffBuf, leftFile, rightFile), config.ErrDiffFound)
+
+	var defaultNoDiffBuf bytes.Buffer
+	assert.NoError(t, (&config.Config{Out: string(config.OutModeMarkdown)}).Run(&defaultNoDiffBuf, leftFile, leftFile))
+
+	for _, tc := range []struct {
+		name         string
+		left, right  string
+		template     string
+		headingLevel uint
+		title        string
+		wantErr      error
+		errContains  string
+		want         string
+		wantExact    bool
+	}{
+		{
+			name:      "reproduce default markdown output on diff",
+			left:      leftFile,
+			right:     rightFile,
+			template:  defaultReproducedTemplate,
+			wantErr:   config.ErrDiffFound,
+			want:      defaultDiffBuf.String(),
+			wantExact: true,
+		},
+		{
+			name:      "reproduce default markdown output on nodiff",
+			left:      leftFile,
+			right:     leftFile,
+			template:  defaultReproducedTemplate,
+			wantErr:   nil,
+			want:      defaultNoDiffBuf.String(),
+			wantExact: true,
+		},
+		{
+			name:      "read template from file with @",
+			left:      leftFile,
+			right:     rightFile,
+			template:  "@" + tmplFile,
+			wantErr:   config.ErrDiffFound,
+			want:      "FILE: 1 changes",
+			wantExact: true,
+		},
+		{
+			name:      "escape @ with @@",
+			left:      leftFile,
+			right:     rightFile,
+			template:  "@@at-sign: {{ .Stats.Change }}",
+			wantErr:   config.ErrDiffFound,
+			want:      "@at-sign: 1",
+			wantExact: true,
+		},
+		{
+			name:      "sprig functions available",
+			left:      leftFile,
+			right:     rightFile,
+			template:  `{{ upper "hello" }} | {{ repeat 3 "!" }} | {{ add .Stats.Change 10 }}`,
+			wantErr:   config.ErrDiffFound,
+			want:      "HELLO | !!! | 11",
+			wantExact: true,
+		},
+		{
+			name:         "markdown-heading and markdown-title are ignored",
+			left:         leftFile,
+			right:        rightFile,
+			template:     "CustomOutput: {{ .Stats.Change }}",
+			headingLevel: 4,
+			title:        "Should be ignored",
+			wantErr:      config.ErrDiffFound,
+			want:         "CustomOutput: 1",
+			wantExact:    true,
+		},
+		{
+			name:        "error reading nonexistent file",
+			left:        leftFile,
+			right:       rightFile,
+			template:    "@" + filepath.Join(dir, "nonexistent.tmpl"),
+			errContains: "failed to read markdown template file",
+		},
+		{
+			name:        "error invalid template syntax",
+			left:        leftFile,
+			right:       rightFile,
+			template:    "{{ .Unclosed",
+			errContains: "failed to parse markdown template",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var c config.Config
+			c.Out = string(config.OutModeMarkdown)
+			c.MarkdownTemplate = tc.template
+			c.MarkdownHeadingLevel = tc.headingLevel
+			c.MarkdownTitle = tc.title
+
+			var got bytes.Buffer
+			err := c.Run(&got, tc.left, tc.right)
+
+			if tc.errContains != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errContains)
+				return
+			}
+
+			if tc.wantErr != nil {
+				assert.ErrorIs(t, err, tc.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			if tc.wantExact {
+				assert.Equal(t, tc.want, got.String())
+			}
+		})
+	}
+}
+

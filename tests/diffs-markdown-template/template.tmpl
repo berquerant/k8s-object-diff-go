@@ -1,0 +1,13 @@
+# Custom Diff Report: {{ upper .Left }} <-> {{ upper .Right }}
+
+Total Changes: {{ add .Stats.Add .Stats.Change .Stats.Destroy }} (Add: {{ .Stats.Add }}, Change: {{ .Stats.Change }}, Destroy: {{ .Stats.Destroy }})
+{{ range .Diffs }}
+### {{ .DiffType | upper }}: `{{ .ID }}`
+
+<details><summary>Diff details</summary>
+
+``` diff
+{{ .Diff }}```
+
+</details>
+{{ end }}

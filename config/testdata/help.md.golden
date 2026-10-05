@@ -76,6 +76,9 @@ Left file <-> Right file
 No changes.
 ```
 
+You can customize markdown output by specifying a Go template string or file (`@file`) via `--markdown-template`.
+Sprig template functions (https://masterminds.github.io/sprig/) are available.
+
 ## Exit status
 
 0 if inputs are the same.

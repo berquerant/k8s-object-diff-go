@@ -1,0 +1,95 @@
+# Custom Diff Report: TESTS/DIFFS-MARKDOWN-TEMPLATE/LEFT.YML <-> TESTS/DIFFS-MARKDOWN-TEMPLATE/RIGHT.YML
+
+Total Changes: 4 (Add: 1, Change: 2, Destroy: 1)
+
+### CHANGE: `apps/v1>Deployment>>nginx-deployment`
+
+<details><summary>Diff details</summary>
+
+``` diff
+--- tests/diffs-markdown-template/left.yml apps/v1>Deployment>>nginx-deployment
++++ tests/diffs-markdown-template/right.yml apps/v1>Deployment>>nginx-deployment
+@@ -5,7 +5,7 @@
+   labels:
+     app: nginx
+ spec:
+-  replicas: 1
++  replicas: 3
+   selector:
+     matchLabels:
+       app: nginx
+@@ -16,6 +16,6 @@
+     spec:
+       containers:
+       - name: nginx
+-        image: nginx:1.14.3
++        image: nginx:1.14.2
+         ports:
+         - containerPort: 80
+```
+
+</details>
+
+### CHANGE: `v1>Pod>default>nginx-common`
+
+<details><summary>Diff details</summary>
+
+``` diff
+--- tests/diffs-markdown-template/left.yml v1>Pod>default>nginx-common
++++ tests/diffs-markdown-template/right.yml v1>Pod>default>nginx-common
+@@ -8,4 +8,4 @@
+   - name: nginx
+     image: nginx:1.14.2
+     ports:
+-    - containerPort: 80
++    - containerPort: 81
+```
+
+</details>
+
+### DESTROY: `v1>Pod>default>nginx-left`
+
+<details><summary>Diff details</summary>
+
+``` diff
+--- tests/diffs-markdown-template/left.yml v1>Pod>default>nginx-left
++++ tests/diffs-markdown-template/right.yml v1>Pod>default>nginx-left
+@@ -1,11 +0,0 @@
+-apiVersion: v1
+-kind: Pod
+-metadata:
+-  name: nginx-left
+-  namespace: default
+-spec:
+-  containers:
+-  - name: nginx
+-    image: nginx:1.14.2
+-    ports:
+-    - containerPort: 80
+```
+
+</details>
+
+### ADD: `v1>Pod>default>nginx-right`
+
+<details><summary>Diff details</summary>
+
+``` diff
+--- tests/diffs-markdown-template/left.yml v1>Pod>default>nginx-right
++++ tests/diffs-markdown-template/right.yml v1>Pod>default>nginx-right
+@@ -0,0 +1,11 @@
++apiVersion: v1
++kind: Pod
++metadata:
++  name: nginx-right
++  namespace: default
++spec:
++  containers:
++  - name: nginx
++    image: nginx:1.14.2
++    ports:
++    - containerPort: 80
+```
+
+</details>
+
