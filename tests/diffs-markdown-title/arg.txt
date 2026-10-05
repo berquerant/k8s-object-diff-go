@@ -1,0 +1,2 @@
+--markdown-title
+Diff: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}

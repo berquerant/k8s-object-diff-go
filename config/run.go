@@ -118,6 +118,11 @@ func (c *Config) runWithReadersAndLabels(ctx context.Context, w io.Writer, leftR
 		return fmt.Errorf("differ: %w", err)
 	}
 
+	headingLevel := c.MarkdownHeadingLevel
+	if headingLevel == 0 {
+		headingLevel = 1
+	}
+
 	printer := &diffPrinter{
 		mode:   c.OutMode(),
 		pairs:  pairs,
@@ -135,7 +140,8 @@ func (c *Config) runWithReadersAndLabels(ctx context.Context, w io.Writer, leftR
 		right:                right,
 		out:                  w,
 		verbose:              c.Verbose,
-		markdownHeadingLevel: c.MarkdownHeadingLevel,
+		markdownHeadingLevel: headingLevel,
+		markdownTitle:        c.MarkdownTitle,
 	}
 
 	return printer.print(ctx)

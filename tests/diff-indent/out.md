@@ -1,4 +1,4 @@
-# Objdiff Summary
+# Objdiff Summary: tests/diff-indent/left.yml <-> tests/diff-indent/right.yml
 
 `tests/diff-indent/left.yml` <-> `tests/diff-indent/right.yml`
 

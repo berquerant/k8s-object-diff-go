@@ -52,7 +52,7 @@ type: "Diff type (add or change or destroy)"
 ### markdown
 
 ```markdown
-# Objdiff Summary
+# Objdiff Summary: Left file <-> Right file
 
 Left file <-> Right file
 
@@ -69,7 +69,7 @@ Unified diff
 or
 
 ```markdown
-# Objdiff Summary
+# Objdiff Summary: Left file <-> Right file
 
 Left file <-> Right file
 

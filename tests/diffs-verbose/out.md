@@ -1,4 +1,4 @@
-# Objdiff Summary
+# Objdiff Summary: tests/diffs-verbose/left.yml <-> tests/diffs-verbose/right.yml
 
 `tests/diffs-verbose/left.yml` <-> `tests/diffs-verbose/right.yml`
 

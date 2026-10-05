@@ -1,4 +1,4 @@
-# Objdiff Summary
+# Objdiff Summary: tests/diff-ignore-matching-lines-override/left.yml <-> tests/diff-ignore-matching-lines-override/right.yml
 
 `tests/diff-ignore-matching-lines-override/left.yml` <-> `tests/diff-ignore-matching-lines-override/right.yml`
 

@@ -54,7 +54,7 @@ type: "Diff type (add or change or destroy)"
 ### markdown
 
 ```markdown
-# Objdiff Summary
+# Objdiff Summary: Left file <-> Right file
 
 Left file <-> Right file
 
@@ -71,7 +71,7 @@ Unified diff
 or
 
 ```markdown
-# Objdiff Summary
+# Objdiff Summary: Left file <-> Right file
 
 Left file <-> Right file
 
@@ -129,6 +129,7 @@ e.g. --ignore-matching-lines -> OBJDIFF_IGNORE_MATCHING_LINES
   -n, --indent int                          yaml indent (default 2)
   -L, --label stringArray                   use label instead of file name (may be separated by ';' or specified multiple times)
       --markdown-heading uint               highest heading level in markdown (default 1)
+      --markdown-title string               title in markdown summary; template variables: LEFT_FILE, RIGHT_FILE (default "Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}")
       --mcp                                 start MCP server over stdio
   -o, --out string                          output format: text,yaml,id,idlist,markdown (default "text")
   -q, --quiet                               quiet log

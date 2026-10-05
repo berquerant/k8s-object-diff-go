@@ -120,6 +120,19 @@ data:
 				"Objdiff Summary",
 			},
 		},
+		{
+			name: "call tool with custom markdown title",
+			args: map[string]any{
+				"left":          filepath.Join("..", "tests", "diffs", "left.yml"),
+				"right":         filepath.Join("..", "tests", "diffs", "right.yml"),
+				"out":           "markdown",
+				"markdownTitle": "Custom Title: {{ .LEFT_FILE }} <=> {{ .RIGHT_FILE }}",
+			},
+			wantDiff: true,
+			wantContains: []string{
+				"Custom Title: " + filepath.Join("..", "tests", "diffs", "left.yml") + " <=> " + filepath.Join("..", "tests", "diffs", "right.yml"),
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			res, err := clientSession.CallTool(ctx, &mcp.CallToolParams{

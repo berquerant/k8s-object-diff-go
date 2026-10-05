@@ -1,4 +1,4 @@
-# Objdiff Summary
+# Objdiff Summary: tests/diff-ignore-managed-fields/left.yml <-> tests/diff-ignore-managed-fields/right.yml
 
 tests/diff-ignore-managed-fields/left.yml <-> tests/diff-ignore-managed-fields/right.yml
 

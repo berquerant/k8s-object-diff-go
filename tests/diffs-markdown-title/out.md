@@ -1,6 +1,6 @@
-# Objdiff Summary: tests/diffs-env-cmd/left.yml <-> tests/diffs-env-cmd/right.yml
+# Diff: tests/diffs-markdown-title/left.yml <-> tests/diffs-markdown-title/right.yml
 
-`tests/diffs-env-cmd/left.yml` <-> `tests/diffs-env-cmd/right.yml`
+`tests/diffs-markdown-title/left.yml` <-> `tests/diffs-markdown-title/right.yml`
 
 | **add** | **change** | **destroy** |
 | :---: | :---: | :---: |
@@ -10,8 +10,8 @@
 <details><summary>View Diff</summary>
 
 ``` diff
---- tests/diffs-env-cmd/left.yml apps/v1>Deployment>>nginx-deployment
-+++ tests/diffs-env-cmd/right.yml apps/v1>Deployment>>nginx-deployment
+--- tests/diffs-markdown-title/left.yml apps/v1>Deployment>>nginx-deployment
++++ tests/diffs-markdown-title/right.yml apps/v1>Deployment>>nginx-deployment
 @@ -5,7 +5,7 @@
    labels:
      app: nginx
@@ -38,8 +38,8 @@
 <details><summary>View Diff</summary>
 
 ``` diff
---- tests/diffs-env-cmd/left.yml v1>Pod>default>nginx-common
-+++ tests/diffs-env-cmd/right.yml v1>Pod>default>nginx-common
+--- tests/diffs-markdown-title/left.yml v1>Pod>default>nginx-common
++++ tests/diffs-markdown-title/right.yml v1>Pod>default>nginx-common
 @@ -8,4 +8,4 @@
    - name: nginx
      image: nginx:1.14.2
@@ -55,8 +55,8 @@
 <details><summary>View Diff</summary>
 
 ``` diff
---- tests/diffs-env-cmd/left.yml v1>Pod>default>nginx-left
-+++ tests/diffs-env-cmd/right.yml v1>Pod>default>nginx-left
+--- tests/diffs-markdown-title/left.yml v1>Pod>default>nginx-left
++++ tests/diffs-markdown-title/right.yml v1>Pod>default>nginx-left
 @@ -1,11 +0,0 @@
 -apiVersion: v1
 -kind: Pod
@@ -78,8 +78,8 @@
 <details><summary>View Diff</summary>
 
 ``` diff
---- tests/diffs-env-cmd/left.yml v1>Pod>default>nginx-right
-+++ tests/diffs-env-cmd/right.yml v1>Pod>default>nginx-right
+--- tests/diffs-markdown-title/left.yml v1>Pod>default>nginx-right
++++ tests/diffs-markdown-title/right.yml v1>Pod>default>nginx-right
 @@ -0,0 +1,11 @@
 +apiVersion: v1
 +kind: Pod

@@ -24,6 +24,7 @@ type diffPrinter struct {
 	out                  io.Writer
 	verbose              bool
 	markdownHeadingLevel uint
+	markdownTitle        string
 }
 
 func (p *diffPrinter) print(ctx context.Context) error {
@@ -237,21 +238,52 @@ func (p *diffPrinter) printYamlDiff(ctx context.Context) error {
 	return ErrDiffFound
 }
 
+const defaultMarkdownTitleTemplate = "Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}"
+
+func (p *diffPrinter) renderMarkdownTitle() (string, error) {
+	tmplStr := p.markdownTitle
+	if tmplStr == "" {
+		tmplStr = defaultMarkdownTitleTemplate
+	}
+	tmpl, err := template.New("markdownTitle").Parse(tmplStr)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse markdown title template: %w", err)
+	}
+	var buf strings.Builder
+	data := struct {
+		LEFT_FILE  string
+		RIGHT_FILE string
+	}{
+		LEFT_FILE:  p.left,
+		RIGHT_FILE: p.right,
+	}
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("failed to execute markdown title template: %w", err)
+	}
+	return buf.String(), nil
+}
+
 func (p *diffPrinter) printMarkdownDiff(ctx context.Context) error {
+	title, err := p.renderMarkdownTitle()
+	if err != nil {
+		return err
+	}
+
 	var (
 		heading = func(n int) string {
 			return strings.Repeat("#", n+int(p.markdownHeadingLevel))
 		}
-		summaryNoDiff = fmt.Sprintf(`%s Objdiff Summary
+		summaryNoDiff = fmt.Sprintf(`%s %s
 
 %s <-> %s
 
 No changes.`,
 			heading(0),
+			title,
 			p.left,
 			p.right,
 		)
-		summaryTmpl = fmt.Sprintf(`%s Objdiff Summary
+		summaryTmpl = fmt.Sprintf(`%s %s
 
 %s <-> %s
 
@@ -259,6 +291,7 @@ No changes.`,
 | :---: | :---: | :---: |
 | {{ .Add }} | {{ .Change }} | {{ .Destroy }} |`,
 			heading(0),
+			title,
 			"`{{ .Left }}`",
 			"`{{ .Right }}`",
 			internal.DiffTypeAdd,
