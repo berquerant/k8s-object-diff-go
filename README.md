@@ -81,6 +81,28 @@ No changes.
 You can customize markdown output by specifying a Go template string or file (`@file`) via `--markdown-template`.
 Sprig template functions (https://masterminds.github.io/sprig/) are available.
 
+#### Template Variables
+
+Root context (`.`):
+- `.Left`: Left input file name or label (`string`).
+- `.Right`: Right input file name or label (`string`).
+- `.HasDiff`: `true` if differences were found (`bool`).
+- `.Stats`: Diff count statistics (`DiffStats`).
+  - `.Stats.Add`: Count of added objects (`int`).
+  - `.Stats.Change`: Count of changed objects (`int`).
+  - `.Stats.Destroy`: Count of destroyed objects (`int`).
+- `.Diffs`: List of diff items (`[]*MarkdownDiffItem`).
+  - `.ID`: Object ID string (e.g. `apps/v1>Deployment>default>nginx`).
+  - `.Diff`: Unified diff string.
+  - `.DiffType`: Diff type (`"add"`, `"change"`, `"destroy"`).
+  - `.Left`: Left Kubernetes object before changes (or `nil` if added).
+    - `.Header.APIVersion`: `apiVersion` (`string`).
+    - `.Header.Kind`: `kind` (`string`).
+    - `.Header.Metadata.Namespace`: `metadata.namespace` (`string`).
+    - `.Header.Metadata.Name`: `metadata.name` (`string`).
+    - `.Body`: Manifest YAML string (`string`).
+  - `.Right`: Right Kubernetes object after changes (or `nil` if destroyed). Same fields as `.Left`.
+
 Example (reproducing the default markdown output):
 
 ````gotemplate
