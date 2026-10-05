@@ -93,31 +93,58 @@ func TestEndToEnd(t *testing.T) {
 				return buf.String(), nil
 			}
 
-			for _, tc := range []struct {
+			hasTemplateArg := func() bool {
+				for _, a := range additionalArgs {
+					if a == "--template" || a == "-T" || strings.HasPrefix(a, "--template=") || strings.HasPrefix(a, "-T=") {
+						return true
+					}
+				}
+				return false
+			}
+
+			var testCases []struct {
 				name string
 				file string
-			}{
-				{
-					name: "id",
-					file: "out.id",
-				},
-				{
-					name: "text",
-					file: "out.txt",
-				},
-				{
-					name: "yaml",
-					file: "out.yml",
-				},
-				{
-					name: "idlist",
-					file: "out.idlist",
-				},
-				{
-					name: "markdown",
-					file: "out.md",
-				},
-			} {
+			}
+			if hasTemplateArg() {
+				testCases = []struct {
+					name string
+					file string
+				}{
+					{
+						name: "template",
+						file: "out.template",
+					},
+				}
+			} else {
+				testCases = []struct {
+					name string
+					file string
+				}{
+					{
+						name: "id",
+						file: "out.id",
+					},
+					{
+						name: "text",
+						file: "out.txt",
+					},
+					{
+						name: "yaml",
+						file: "out.yml",
+					},
+					{
+						name: "idlist",
+						file: "out.idlist",
+					},
+					{
+						name: "markdown",
+						file: "out.md",
+					},
+				}
+			}
+
+			for _, tc := range testCases {
 				t.Run(tc.name, func(t *testing.T) {
 					got, err := run(tc.name)
 					if !assert.Nil(t, err) {

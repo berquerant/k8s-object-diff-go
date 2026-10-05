@@ -78,7 +78,10 @@ Left file <-> Right file
 No changes.
 ```
 
-You can customize markdown output by specifying a Go template string or file (`@file`) via `--markdown-template`.
+### template
+
+Formats diff output using a Go template string or file (`@file`, `@@` to escape leading `@`) specified via `--template` (`-T`).
+`--template` is required for template mode and cannot be used with other modes.
 Sprig template functions (https://masterminds.github.io/sprig/) are available.
 
 #### Template Variables
@@ -91,7 +94,7 @@ Root context (`.`):
   - `.Stats.Add`: Count of added objects (`int`).
   - `.Stats.Change`: Count of changed objects (`int`).
   - `.Stats.Destroy`: Count of destroyed objects (`int`).
-- `.Diffs`: List of diff items (`[]*MarkdownDiffItem`).
+- `.Diffs`: List of diff items (`[]*TemplateDiffItem`).
   - `.ID`: Object ID string (e.g. `apps/v1>Deployment>default>nginx`).
   - `.Diff`: Unified diff string.
   - `.DiffType`: Diff type (`"add"`, `"change"`, `"destroy"`).
@@ -182,13 +185,13 @@ e.g. --ignore-matching-lines -> OBJDIFF_IGNORE_MATCHING_LINES
   -n, --indent int                          yaml indent (default 2)
   -L, --label stringArray                   use label instead of file name (may be separated by ';' or specified multiple times)
       --markdown-heading uint               highest heading level in markdown (default 1)
-      --markdown-template string            go template string or file (prefix with '@') for markdown output; ignores markdown-heading and markdown-title
       --markdown-title string               title in markdown summary; template variables: LEFT_FILE, RIGHT_FILE (default "Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}")
       --mcp                                 start MCP server over stdio
-  -o, --out string                          output format: text,yaml,id,idlist,markdown (default "text")
+  -o, --out string                          output format: text,yaml,id,idlist,markdown,template (default "text")
   -q, --quiet                               quiet log
   -d, --separator string                    object id separator (default ">")
       --success                             exit with 0 even if inputs differ
+  -T, --template string                     template string or file (prefix with '@') for template output mode
   -v, --verbose                             enable verbose output; annotate diff type and display summary
       --version                             print objdiff version
 ```

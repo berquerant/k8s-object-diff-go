@@ -17,14 +17,14 @@ import (
 type DiffToolParams struct {
 	Left                 string   `json:"left" jsonschema:"left manifest YAML content or file path"`
 	Right                string   `json:"right" jsonschema:"right manifest YAML content or file path"`
-	Out                  string   `json:"out,omitempty" jsonschema:"output format: text, yaml, id, idlist, markdown (default: text)"`
+	Out                  string   `json:"out,omitempty" jsonschema:"output format: text, yaml, id, idlist, markdown, template (default: text)"`
 	Context              *int     `json:"context,omitempty" jsonschema:"number of diff context lines (default: 3)"`
 	Separator            string   `json:"separator,omitempty" jsonschema:"object id separator (default: >)"`
 	Indent               *int     `json:"indent,omitempty" jsonschema:"yaml indent (default: 2)"`
 	Verbose              bool     `json:"verbose,omitempty" jsonschema:"enable verbose output; annotate diff type and display summary"`
 	MarkdownHeadingLevel *uint    `json:"markdownHeadingLevel,omitempty" jsonschema:"highest heading level in markdown (default: 1)"`
 	MarkdownTitle        string   `json:"markdownTitle,omitempty" jsonschema:"title template in markdown format (default: 'Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}')"`
-	MarkdownTemplate     string   `json:"markdownTemplate,omitempty" jsonschema:"go template string or file path (prefix with '@') for markdown output; ignores markdown-heading and markdown-title"`
+	Template             string   `json:"template,omitempty" jsonschema:"template string or file path (prefix with '@') for template output mode"`
 	IgnoreMatchingLines  []string `json:"ignoreMatchingLines,omitempty" jsonschema:"ignore lines matching regexp"`
 	IgnoreFields         []string `json:"ignoreFields,omitempty" jsonschema:"ignore field by path or yq expression"`
 	IgnoreLabels         []string `json:"ignoreLabels,omitempty" jsonschema:"ignore label by key"`
@@ -141,8 +141,8 @@ func (cfg *Config) applyOverrides(params DiffToolParams) {
 	if params.MarkdownTitle != "" {
 		cfg.MarkdownTitle = params.MarkdownTitle
 	}
-	if params.MarkdownTemplate != "" {
-		cfg.MarkdownTemplate = params.MarkdownTemplate
+	if params.Template != "" {
+		cfg.Template = params.Template
 	}
 	cfg.IgnoreMatchingLines = append(cfg.IgnoreMatchingLines, params.IgnoreMatchingLines...)
 	cfg.IgnoreFields = append(cfg.IgnoreFields, params.IgnoreFields...)

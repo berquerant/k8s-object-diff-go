@@ -94,6 +94,17 @@ func (c *Config) runWithReaders(ctx context.Context, w io.Writer, leftReader, ri
 }
 
 func (c *Config) runWithReadersAndLabels(ctx context.Context, w io.Writer, leftReader, rightReader io.Reader, left, right string) error {
+	switch c.OutMode() {
+	case OutModeTemplate:
+		if c.Template == "" {
+			return errors.New("--template is required for template mode")
+		}
+	default:
+		if c.Template != "" {
+			return errors.New("--template is only allowed with template mode")
+		}
+	}
+
 	lineFilter, err := internal.NewLineFilter(c.IgnoreMatchingLines)
 	if err != nil {
 		return fmt.Errorf("ignore-matching-lines: %w", err)
@@ -142,7 +153,7 @@ func (c *Config) runWithReadersAndLabels(ctx context.Context, w io.Writer, leftR
 		verbose:              c.Verbose,
 		markdownHeadingLevel: headingLevel,
 		markdownTitle:        c.MarkdownTitle,
-		markdownTemplate:     c.MarkdownTemplate,
+		template:             c.Template,
 	}
 
 	return printer.print(ctx)
