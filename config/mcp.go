@@ -23,6 +23,7 @@ type DiffToolParams struct {
 	Indent               *int     `json:"indent,omitempty" jsonschema:"yaml indent (default: 2)"`
 	Verbose              bool     `json:"verbose,omitempty" jsonschema:"enable verbose output; annotate diff type and display summary"`
 	MarkdownHeadingLevel *uint    `json:"markdownHeadingLevel,omitempty" jsonschema:"highest heading level in markdown (default: 1)"`
+	MarkdownTitle        string   `json:"markdownTitle,omitempty" jsonschema:"title template in markdown format (default: 'Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}')"`
 	IgnoreMatchingLines  []string `json:"ignoreMatchingLines,omitempty" jsonschema:"ignore lines matching regexp"`
 	IgnoreFields         []string `json:"ignoreFields,omitempty" jsonschema:"ignore field by path or yq expression"`
 	IgnoreLabels         []string `json:"ignoreLabels,omitempty" jsonschema:"ignore label by key"`
@@ -135,6 +136,9 @@ func (cfg *Config) applyOverrides(params DiffToolParams) {
 	}
 	if params.MarkdownHeadingLevel != nil {
 		cfg.MarkdownHeadingLevel = *params.MarkdownHeadingLevel
+	}
+	if params.MarkdownTitle != "" {
+		cfg.MarkdownTitle = params.MarkdownTitle
 	}
 	cfg.IgnoreMatchingLines = append(cfg.IgnoreMatchingLines, params.IgnoreMatchingLines...)
 	cfg.IgnoreFields = append(cfg.IgnoreFields, params.IgnoreFields...)

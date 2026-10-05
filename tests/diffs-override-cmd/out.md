@@ -1,4 +1,4 @@
-# Objdiff Summary
+# Objdiff Summary: tests/diffs-override-cmd/left.yml <-> tests/diffs-override-cmd/right.yml
 
 `tests/diffs-override-cmd/left.yml` <-> `tests/diffs-override-cmd/right.yml`
 

@@ -11,6 +11,7 @@ import (
 
 	"github.com/berquerant/k8s-object-diff-go/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -168,3 +169,67 @@ data:
 		})
 	}
 }
+
+func TestMarkdownTitle(t *testing.T) {
+	const (
+		manifest1 = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test
+data:
+  os: debian`
+		manifest2 = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test
+data:
+  os: ubuntu`
+	)
+
+	dir := t.TempDir()
+	leftFile := filepath.Join(dir, "left.yml")
+	rightFile := filepath.Join(dir, "right.yml")
+	require.NoError(t, os.WriteFile(leftFile, []byte(manifest1), 0o644))
+	require.NoError(t, os.WriteFile(rightFile, []byte(manifest2), 0o644))
+
+	t.Run("default title", func(t *testing.T) {
+		var c config.Config
+		c.Out = string(config.OutModeMarkdown)
+		var got bytes.Buffer
+		assert.ErrorIs(t, c.Run(&got, leftFile, rightFile), config.ErrDiffFound)
+		wantTitle := fmt.Sprintf("# Objdiff Summary: %s <-> %s\n\n`%s` <-> `%s`", leftFile, rightFile, leftFile, rightFile)
+		assert.Contains(t, got.String(), wantTitle)
+	})
+
+	t.Run("custom title with template variables", func(t *testing.T) {
+		var c config.Config
+		c.Out = string(config.OutModeMarkdown)
+		c.MarkdownTitle = "Comparison of {{ .LEFT_FILE }} and {{ .RIGHT_FILE }}"
+		var got bytes.Buffer
+		assert.ErrorIs(t, c.Run(&got, leftFile, rightFile), config.ErrDiffFound)
+		wantTitle := fmt.Sprintf("# Comparison of %s and %s\n\n`%s` <-> `%s`", leftFile, rightFile, leftFile, rightFile)
+		assert.Contains(t, got.String(), wantTitle)
+	})
+
+	t.Run("custom title with labels", func(t *testing.T) {
+		var c config.Config
+		c.Out = string(config.OutModeMarkdown)
+		c.MarkdownTitle = "[{{ .LEFT_FILE }}] vs [{{ .RIGHT_FILE }}]"
+		c.Labels = []string{"prod", "stg"}
+		var got bytes.Buffer
+		assert.ErrorIs(t, c.Run(&got, leftFile, rightFile), config.ErrDiffFound)
+		wantTitle := "# [prod] vs [stg]\n\n`prod` <-> `stg`"
+		assert.Contains(t, got.String(), wantTitle)
+	})
+
+	t.Run("invalid title template", func(t *testing.T) {
+		var c config.Config
+		c.Out = string(config.OutModeMarkdown)
+		c.MarkdownTitle = "{{ .INVALID"
+		var got bytes.Buffer
+		err := c.Run(&got, leftFile, rightFile)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse markdown title template")
+	})
+}
+

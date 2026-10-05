@@ -1,4 +1,4 @@
-# Objdiff Summary
+# Objdiff Summary: leftlabel <-> rightlabel
 
 `leftlabel` <-> `rightlabel`
 

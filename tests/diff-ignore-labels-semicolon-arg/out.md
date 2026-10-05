@@ -1,4 +1,4 @@
-# Objdiff Summary
+# Objdiff Summary: tests/diff-ignore-labels-semicolon-arg/left.yml <-> tests/diff-ignore-labels-semicolon-arg/right.yml
 
 `tests/diff-ignore-labels-semicolon-arg/left.yml` <-> `tests/diff-ignore-labels-semicolon-arg/right.yml`
 

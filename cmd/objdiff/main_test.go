@@ -54,7 +54,16 @@ func TestEndToEnd(t *testing.T) {
 
 			additionalArgs := []string{}
 			if s, err := readAll("arg.txt"); err == nil {
-				additionalArgs = strings.Split(strings.TrimSpace(s), " ")
+				s = strings.TrimSpace(s)
+				if strings.Contains(s, "\n") {
+					for _, line := range strings.Split(s, "\n") {
+						if line = strings.TrimSpace(line); line != "" {
+							additionalArgs = append(additionalArgs, line)
+						}
+					}
+				} else {
+					additionalArgs = strings.Split(s, " ")
+				}
 			}
 
 			additionalEnvs := []string{}

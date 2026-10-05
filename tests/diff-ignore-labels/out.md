@@ -1,4 +1,4 @@
-# Objdiff Summary
+# Objdiff Summary: tests/diff-ignore-labels/left.yml <-> tests/diff-ignore-labels/right.yml
 
 `tests/diff-ignore-labels/left.yml` <-> `tests/diff-ignore-labels/right.yml`
 

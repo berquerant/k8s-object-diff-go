@@ -114,7 +114,7 @@ type: "Diff type (add or change or destroy)"
 ` + "```\n" + `
 ### markdown
 
-` + "```markdown\n" + `# Objdiff Summary
+` + "```markdown\n" + `# Objdiff Summary: Left file <-> Right file
 
 Left file <-> Right file
 
@@ -129,7 +129,7 @@ Unified diff
 ` + "```\n" + `
 or
 
-` + "```markdown\n" + `# Objdiff Summary
+` + "```markdown\n" + `# Objdiff Summary: Left file <-> Right file
 
 Left file <-> Right file
 
