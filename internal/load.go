@@ -9,8 +9,8 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-func LoadObjects(ctx context.Context, r io.Reader, marshaler Marshaler, allowDuplicteMapKey bool) ([]*Object, error) {
-	m := NewYamlUnmarshaler(r, map[string]any{}, allowDuplicteMapKey)
+func LoadObjects(ctx context.Context, r io.Reader, marshaler Marshaler, allowDuplicateMapKey bool) ([]*Object, error) {
+	m := NewYamlUnmarshaler(r, map[string]any{}, allowDuplicateMapKey)
 	xs, err := m.Unmarshal(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load objects: %w", err)
@@ -20,7 +20,7 @@ func LoadObjects(ctx context.Context, r io.Reader, marshaler Marshaler, allowDup
 	for i, x := range xs {
 		v, err := LoadObjectFromMap(ctx, marshaler, x)
 		if err != nil {
-			return nil, fmt.Errorf("load obejcts: index %d: %w", i, err)
+			return nil, fmt.Errorf("load objects: index %d: %w", i, err)
 		}
 		result[i] = v
 	}
