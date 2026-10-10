@@ -1,6 +1,6 @@
 module github.com/berquerant/k8s-object-diff-go
 
-go 1.27.1
+go 1.27.2
 
 tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
@@ -256,7 +256,7 @@ require (
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
 	golang.org/x/exp/typeparams v0.0.0-20260811152304-ee035b5b010f // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/perf v0.0.0-20250710210952-7b7c2de18447 // indirect
 	golang.org/x/sync v0.23.0 // indirect
