@@ -435,11 +435,20 @@ No changes.`,
 		})
 	}
 
-	if err := template.Must(template.New("summary").Parse(summaryTmpl)).Execute(p.out, summary); err != nil {
-		return err
+	summaryTemplate, err := template.New("summary").Parse(summaryTmpl)
+	if err != nil {
+		return fmt.Errorf("failed to parse markdown summary template: %w", err)
 	}
-	if err := template.Must(template.New("diff").Parse(diffTmpl)).Execute(p.out, items); err != nil {
-		return err
+	if err := summaryTemplate.Execute(p.out, summary); err != nil {
+		return fmt.Errorf("failed to execute markdown summary template: %w", err)
+	}
+
+	diffTemplate, err := template.New("diff").Parse(diffTmpl)
+	if err != nil {
+		return fmt.Errorf("failed to parse markdown diff template: %w", err)
+	}
+	if err := diffTemplate.Execute(p.out, items); err != nil {
+		return fmt.Errorf("failed to execute markdown diff template: %w", err)
 	}
 	return ErrDiffFound
 }
