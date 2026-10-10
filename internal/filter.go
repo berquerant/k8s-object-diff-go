@@ -33,24 +33,27 @@ func (f *LineFilter) Filter(s string) string {
 	}
 	// Preserve the trailing newline behaviour of the original string.
 	trailingNewline := strings.HasSuffix(s, "\n")
-	lines := strings.Split(s, "\n")
-	// When the string ends with "\n", Split produces an empty string as the
-	// last element — exclude it from filtering so we don't accidentally drop it.
-	end := len(lines)
-	if trailingNewline && end > 0 {
-		end--
+	content := s
+	if trailingNewline {
+		content = s[:len(s)-1]
 	}
 
-	result := lines[:0:0] // reuse backing array, length 0
-	for _, line := range lines[:end] {
-		if !f.matchesAny(line) {
-			result = append(result, line)
+	var b strings.Builder
+	first := true
+	for line := range strings.SplitSeq(content, "\n") {
+		if f.matchesAny(line) {
+			continue
 		}
+		if !first {
+			b.WriteByte('\n')
+		}
+		first = false
+		b.WriteString(line)
 	}
-	if trailingNewline {
-		result = append(result, "")
+	if trailingNewline && !first {
+		b.WriteByte('\n')
 	}
-	return strings.Join(result, "\n")
+	return b.String()
 }
 
 func (f *LineFilter) matchesAny(line string) bool {
