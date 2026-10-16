@@ -1,10 +1,13 @@
 package config
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 	"testing"
 
+	"github.com/berquerant/k8s-object-diff-go/internal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -193,3 +196,122 @@ func TestConfigClone(t *testing.T) {
 		})
 	}
 }
+
+func TestMarkdownCodeFence(t *testing.T) {
+	for _, tc := range []struct {
+		title   string
+		content string
+		want    string
+	}{
+		{
+			title:   "no backticks",
+			content: "hello world\n+ foo: bar\n",
+			want:    "```",
+		},
+		{
+			title:   "single backtick",
+			content: "`inline code`",
+			want:    "```",
+		},
+		{
+			title:   "double backticks",
+			content: "``code``",
+			want:    "```",
+		},
+		{
+			title:   "triple backticks",
+			content: "```bash\necho 1\n```",
+			want:    "````",
+		},
+		{
+			title:   "quad backticks",
+			content: "````markdown\n```\n````",
+			want:    "`````",
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			assert.Equal(t, tc.want, markdownCodeFence(tc.content))
+		})
+	}
+}
+
+func TestDiffPrinterModes(t *testing.T) {
+	pairs := []*internal.ObjectPair{
+		{
+			ID: "v1>Pod>default>nginx",
+			Left: &internal.Object{
+				Header: internal.ObjectHeader{
+					APIVersion: "v1",
+					Kind:       "Pod",
+					Metadata: internal.ObjectMeta{
+						Name:      "nginx",
+						Namespace: "default",
+					},
+				},
+				Body: "apiVersion: v1\nkind: Pod\n",
+			},
+			Right: &internal.Object{
+				Header: internal.ObjectHeader{
+					APIVersion: "v1",
+					Kind:       "Pod",
+					Metadata: internal.ObjectMeta{
+						Name:      "nginx",
+						Namespace: "default",
+					},
+				},
+				Body: "apiVersion: v1\nkind: Pod\nmetadata:\n  name: nginx\n",
+			},
+		},
+	}
+
+	for _, tc := range []struct {
+		title        string
+		mode         OutMode
+		wantContains []string
+		wantErr      error
+	}{
+		{
+			title:        "idlist mode",
+			mode:         OutModeIDList,
+			wantContains: []string{"v1>Pod>default>nginx"},
+			wantErr:      nil,
+		},
+		{
+			title:        "id mode",
+			mode:         OutModeID,
+			wantContains: []string{},
+			wantErr:      nil,
+		},
+		{
+			title:        "yaml mode",
+			mode:         OutModeYaml,
+			wantContains: []string{"id: v1>Pod>default>nginx", "type: change"},
+			wantErr:      ErrDiffFound,
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			var buf bytes.Buffer
+			differ := internal.NewDMPDiffer()
+			p := &diffPrinter{
+				mode:         tc.mode,
+				pairs:        pairs,
+				differ:       differ,
+				objectDiffer: internal.NewObjectDiffBuilder(differ, "left", "right", 3, false),
+				marshaler:    internal.NewYamlMarshaler(2, false),
+				left:         "left",
+				right:        "right",
+				out:          &buf,
+			}
+			err := p.print(context.Background())
+			if tc.wantErr != nil {
+				assert.ErrorIs(t, err, tc.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+			for _, s := range tc.wantContains {
+				assert.Contains(t, buf.String(), s)
+			}
+		})
+	}
+}
+

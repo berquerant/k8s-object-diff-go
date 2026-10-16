@@ -34,7 +34,8 @@ func NewYqFilter(exprs []string) *YqFilter {
 	}
 }
 
-// NewFieldFilter creates a [YqFilter] for removing field paths (e.g. "metadata.resourceVersion", "status").
+// NewFieldFilter creates a [YqFilter] for removing field paths (e.g. "metadata.resourceVersion", "status")
+// or direct deletion expressions (e.g. "del(.status)").
 func NewFieldFilter(fieldPaths []string) *YqFilter {
 	if len(fieldPaths) == 0 {
 		return nil
@@ -42,6 +43,10 @@ func NewFieldFilter(fieldPaths []string) *YqFilter {
 	exprs := make([]string, len(fieldPaths))
 	for i, p := range fieldPaths {
 		p = strings.TrimSpace(p)
+		if strings.HasPrefix(p, "del(") && strings.HasSuffix(p, ")") {
+			exprs[i] = p
+			continue
+		}
 		if !strings.HasPrefix(p, ".") {
 			p = "." + p
 		}

@@ -391,13 +391,13 @@ No changes.`,
 
 <details><summary>View Diff</summary>
 
-%s
+{{ .Fence }} diff
+{{ .Diff }}{{ .Fence }}
 
 </details>
 {{ end }}`,
 			heading(1),
 			"`{{ .ID }}`",
-			"``` diff\n{{ .Diff }}```",
 		)
 	)
 
@@ -406,7 +406,7 @@ No changes.`,
 		Add, Change, Destroy int
 	}
 	type Item struct {
-		ID, Diff, DiffType string
+		ID, Diff, DiffType, Fence string
 	}
 
 	diffs, err := p.collectDiffs(ctx)
@@ -432,6 +432,7 @@ No changes.`,
 			ID:       d.Pair.ID,
 			Diff:     d.Diff,
 			DiffType: d.Type.String(),
+			Fence:    markdownCodeFence(d.Diff),
 		})
 	}
 
@@ -451,4 +452,21 @@ No changes.`,
 		return fmt.Errorf("failed to execute markdown diff template: %w", err)
 	}
 	return ErrDiffFound
+}
+
+func markdownCodeFence(content string) string {
+	maxRun := 0
+	curr := 0
+	for _, r := range content {
+		if r == '`' {
+			curr++
+			if curr > maxRun {
+				maxRun = curr
+			}
+		} else {
+			curr = 0
+		}
+	}
+	fenceLen := max(3, maxRun+1)
+	return strings.Repeat("`", fenceLen)
 }
