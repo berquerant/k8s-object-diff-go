@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"slices"
 	"strings"
 
 	"github.com/berquerant/k8s-object-diff-go/internal"
@@ -65,6 +66,20 @@ func (c *Config) OutMode() OutMode {
 	default:
 		return OutModeUnknown
 	}
+}
+
+// Clone returns a deep copy of the Config with independent slices.
+func (c *Config) Clone() *Config {
+	if c == nil {
+		return nil
+	}
+	clone := *c
+	clone.Labels = slices.Clone(c.Labels)
+	clone.IgnoreMatchingLines = slices.Clone(c.IgnoreMatchingLines)
+	clone.IgnoreFields = slices.Clone(c.IgnoreFields)
+	clone.IgnoreLabels = slices.Clone(c.IgnoreLabels)
+	clone.IgnoreAnnotations = slices.Clone(c.IgnoreAnnotations)
+	return &clone
 }
 
 var ErrNoDiffCommand = errors.New("NoDiffCommand")

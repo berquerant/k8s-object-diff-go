@@ -73,8 +73,8 @@ func (c *Config) RunMCP(ctx context.Context) error {
 }
 
 func (c *Config) runDiffTool(ctx context.Context, params DiffToolParams) (DiffToolResult, error) {
-	// Create a copy of config and apply param overrides
-	cfg := *c
+	// Create a deep copy of config and apply param overrides
+	cfg := c.Clone()
 
 	cfg.applyOverrides(params)
 

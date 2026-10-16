@@ -155,3 +155,88 @@ data:
 		})
 	}
 }
+
+func TestMCPServerConfigImmutability(t *testing.T) {
+	const (
+		manifestLeft = `# comment to ignore
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test
+  namespace: default
+data:
+  key: value1`
+		manifestRight = `# comment to ignore
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test
+  namespace: default
+data:
+  key: value2`
+	)
+
+	ctx := context.Background()
+	baseCfg := config.Config{
+		Labels:              []string{"original-left", "original-right"},
+		IgnoreMatchingLines: []string{"^initial"},
+		IgnoreFields:        []string{"initial.field"},
+		IgnoreLabels:        []string{"initial-label"},
+		IgnoreAnnotations:   []string{"initial-annotation"},
+	}
+	server := baseCfg.NewMCPServer()
+
+	client := mcp.NewClient(&mcp.Implementation{
+		Name:    "immutability-client",
+		Version: "1.0.0",
+	}, nil)
+
+	serverTransport, clientTransport := mcp.NewInMemoryTransports()
+	go func() {
+		_ = server.Run(ctx, serverTransport)
+	}()
+
+	clientSession, err := client.Connect(ctx, clientTransport, nil)
+	require.NoError(t, err)
+	defer clientSession.Close()
+
+	for _, tc := range []struct {
+		title string
+		args  map[string]any
+	}{
+		{
+			title: "override ignoreFields and matching lines",
+			args: map[string]any{
+				"left":                manifestLeft,
+				"right":               manifestRight,
+				"ignoreMatchingLines": []string{"^# comment"},
+				"ignoreFields":        []string{"data.key"},
+			},
+		},
+		{
+			title: "override ignoreLabels and ignoreAnnotations",
+			args: map[string]any{
+				"left":              manifestLeft,
+				"right":             manifestRight,
+				"ignoreLabels":      []string{"app"},
+				"ignoreAnnotations": []string{"build"},
+			},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			res, err := clientSession.CallTool(ctx, &mcp.CallToolParams{
+				Name:      "diff_k8s_manifests",
+				Arguments: tc.args,
+			})
+			require.NoError(t, err)
+			assert.False(t, res.IsError)
+
+			// Base config slices must remain completely unchanged across requests
+			assert.Equal(t, []string{"original-left", "original-right"}, baseCfg.Labels)
+			assert.Equal(t, []string{"^initial"}, baseCfg.IgnoreMatchingLines)
+			assert.Equal(t, []string{"initial.field"}, baseCfg.IgnoreFields)
+			assert.Equal(t, []string{"initial-label"}, baseCfg.IgnoreLabels)
+			assert.Equal(t, []string{"initial-annotation"}, baseCfg.IgnoreAnnotations)
+		})
+	}
+}

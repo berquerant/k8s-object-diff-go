@@ -130,3 +130,66 @@ func TestConfigNewDiffer(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigClone(t *testing.T) {
+	for _, tc := range []struct {
+		title string
+		cfg   *Config
+	}{
+		{
+			title: "nil config",
+			cfg:   nil,
+		},
+		{
+			title: "empty config",
+			cfg:   &Config{},
+		},
+		{
+			title: "populated config with slices",
+			cfg: &Config{
+				Context:             5,
+				Separator:           "/",
+				Indent:              4,
+				Out:                 "yaml",
+				Color:               true,
+				Labels:              []string{"lbl1", "lbl2"},
+				IgnoreMatchingLines: []string{"^#", "test"},
+				IgnoreFields:        []string{"spec.replicas"},
+				IgnoreLabels:        []string{"app"},
+				IgnoreAnnotations:   []string{"build"},
+			},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			got := tc.cfg.Clone()
+			if tc.cfg == nil {
+				assert.Nil(t, got)
+				return
+			}
+			require.NotNil(t, got)
+			assert.Equal(t, tc.cfg, got)
+
+			// Verify mutating clone slice contents does not affect original
+			if len(tc.cfg.Labels) > 0 {
+				got.Labels[0] = "mutated"
+				assert.NotEqual(t, tc.cfg.Labels[0], got.Labels[0])
+			}
+			if len(tc.cfg.IgnoreMatchingLines) > 0 {
+				got.IgnoreMatchingLines = append(got.IgnoreMatchingLines, "extra")
+				assert.NotContains(t, tc.cfg.IgnoreMatchingLines, "extra")
+			}
+			if len(tc.cfg.IgnoreFields) > 0 {
+				got.IgnoreFields = append(got.IgnoreFields, "extra")
+				assert.NotContains(t, tc.cfg.IgnoreFields, "extra")
+			}
+			if len(tc.cfg.IgnoreLabels) > 0 {
+				got.IgnoreLabels = append(got.IgnoreLabels, "extra")
+				assert.NotContains(t, tc.cfg.IgnoreLabels, "extra")
+			}
+			if len(tc.cfg.IgnoreAnnotations) > 0 {
+				got.IgnoreAnnotations = append(got.IgnoreAnnotations, "extra")
+				assert.NotContains(t, tc.cfg.IgnoreAnnotations, "extra")
+			}
+		})
+	}
+}
