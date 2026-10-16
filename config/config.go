@@ -73,9 +73,9 @@ func (c *Config) diffCommand() ([]string, error) {
 	if len(c.DiffCommand) == 0 {
 		return nil, ErrNoDiffCommand
 	}
-	xs := strings.Split(internal.EscapeCommand(c.DiffCommand), " ")
+	xs := strings.Fields(c.DiffCommand)
 	if len(xs) == 0 {
-		panic("unreachable: diffCommand specified but no command")
+		return nil, ErrNoDiffCommand
 	}
 	head, err := exec.LookPath(xs[0])
 	if err != nil {
