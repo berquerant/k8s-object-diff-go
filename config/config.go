@@ -69,6 +69,8 @@ func (c *Config) OutMode() OutMode {
 }
 
 // Clone returns a deep copy of the Config with independent slices.
+// Note: Stdin (io.Reader) is shallow-copied because stream readers maintain internal state.
+// In MCP server mode, Stdin is not consumed because inputs are loaded via openInput.
 func (c *Config) Clone() *Config {
 	if c == nil {
 		return nil

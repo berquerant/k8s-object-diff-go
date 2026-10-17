@@ -138,6 +138,17 @@ No changes.
 1 if inputs differ.
 Otherwise 2.
 
+## Filtering
+
+objdiff supports filtering lines, fields, labels, and annotations:
+- Line filter (`-i`, `--ignore-matching-lines`): ignores lines matching regular expressions.
+- Field filter (`-f`, `--ignore-field`): ignores fields by path (e.g. `status`, `metadata.managedFields`) or yq deletion expressions (e.g. `del(.status)`).
+- Label filter (`-l`, `--ignore-label`): ignores labels across metadata and nested pod templates by key.
+- Annotation filter (`-a`, `--ignore-annotation`): ignores annotations across metadata and nested pod templates by key.
+- Shortcut flags:
+  - `-m`, `--ignore-managed-fields`: shortcut for `-f metadata.managedFields`.
+  - `-s`, `--ignore-status`: shortcut for `-f status`.
+
 ## Override differ
 
 ```shell

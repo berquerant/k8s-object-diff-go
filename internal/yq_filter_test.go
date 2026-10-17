@@ -66,6 +66,12 @@ status:
 				wantMissing: []string{"resourceVersion", "status"},
 				wantPresent: []string{"nginx"},
 			},
+			{
+				title:       "with spaces around del and parentheses",
+				fieldPaths:  []string{"del (.status)", "del ( .metadata.resourceVersion )"},
+				wantMissing: []string{"resourceVersion", "status"},
+				wantPresent: []string{"nginx"},
+			},
 		} {
 			t.Run(tc.title, func(t *testing.T) {
 				f := internal.NewFieldFilter(tc.fieldPaths)
