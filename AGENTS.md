@@ -29,7 +29,7 @@ Standard text diff tools compare files line-by-line, which often yields messy or
   - `idlist`: Lists all Object IDs found in the inputs.
   - `markdown`: Rich Markdown output with collapsible `<details>` blocks for diffs and summary tables, suitable for PR comments or CI reports.
   - `template`: Formats diff output using custom Go templates specified via `--template` (`-T`) powered by Go `text/template` and Sprig functions.
-- **Custom Differ Integration (`-x / --diff-cmd` or `DIFFCMD`)**: Uses a built-in diff engine based on `sergi/go-diff` by default, but allows executing external diff tools (e.g. `diff`).
+- **Custom Differ Integration (`-x / --diff-cmd` or `OBJDIFF_DIFF_CMD`)**: Uses a built-in diff engine based on `sergi/go-diff` by default, but allows executing external diff tools (e.g. `diff`).
 - **Flexible Input Handling**: Supports stdin (`-`), custom Object ID separators (`-d`), custom context line count (`-C`), label overrides (`-L`), and tolerates duplicate map keys (`--allow-duplicate-key`).
 - **Filtering Capabilities**:
   - Regular expression line filtering (`-i / --ignore-matching-lines`).
@@ -93,7 +93,7 @@ flowchart TD
         DiffBuilder["ObjectDiffBuilder (`diff.go`)"]
         PairMap --> DiffBuilder
         
-        DifferEngine["Differ Engine (`diffmatchpatch.go` / `diff.go`)<br/>- Built-in (sergi/go-diff)<br/>- External Process (-x / DIFFCMD)"]
+        DifferEngine["Differ Engine (`diffmatchpatch.go` / `diff.go`)<br/>- Built-in (sergi/go-diff)<br/>- External Process (-x / OBJDIFF_DIFF_CMD)"]
         DifferEngine --> DiffBuilder
         
         DiffResults["ObjectDiff Collection<br/>(add / change / destroy / unchange)"]

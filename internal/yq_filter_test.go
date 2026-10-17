@@ -42,13 +42,50 @@ status:
 `
 
 	t.Run("FieldFilter", func(t *testing.T) {
-		f := internal.NewFieldFilter([]string{"metadata.resourceVersion", "status"})
-		require.NotNil(t, f)
-		res, err := f.FilterBody(inputYAML)
-		require.NoError(t, err)
-		assert.NotContains(t, res, "resourceVersion")
-		assert.NotContains(t, res, "status")
-		assert.Contains(t, res, "nginx")
+		for _, tc := range []struct {
+			title       string
+			fieldPaths  []string
+			wantMissing []string
+			wantPresent []string
+		}{
+			{
+				title:       "without leading dot",
+				fieldPaths:  []string{"metadata.resourceVersion", "status"},
+				wantMissing: []string{"resourceVersion", "status"},
+				wantPresent: []string{"nginx", "generation"},
+			},
+			{
+				title:       "with leading dot",
+				fieldPaths:  []string{".metadata.generation"},
+				wantMissing: []string{"generation"},
+				wantPresent: []string{"resourceVersion"},
+			},
+			{
+				title:       "with explicit del() expression",
+				fieldPaths:  []string{"del(.status)", "del(.metadata.resourceVersion)"},
+				wantMissing: []string{"resourceVersion", "status"},
+				wantPresent: []string{"nginx"},
+			},
+			{
+				title:       "with spaces around del and parentheses",
+				fieldPaths:  []string{"del (.status)", "del ( .metadata.resourceVersion )"},
+				wantMissing: []string{"resourceVersion", "status"},
+				wantPresent: []string{"nginx"},
+			},
+		} {
+			t.Run(tc.title, func(t *testing.T) {
+				f := internal.NewFieldFilter(tc.fieldPaths)
+				require.NotNil(t, f)
+				res, err := f.FilterBody(inputYAML)
+				require.NoError(t, err)
+				for _, m := range tc.wantMissing {
+					assert.NotContains(t, res, m)
+				}
+				for _, p := range tc.wantPresent {
+					assert.Contains(t, res, p)
+				}
+			})
+		}
 	})
 
 	t.Run("LabelFilter", func(t *testing.T) {
