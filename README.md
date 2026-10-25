@@ -56,14 +56,13 @@ type: "Diff type (add or change or destroy)"
 ```markdown
 # Objdiff Summary: Left file <-> Right file
 
-Left file <-> Right file
-
 | **add** | **change** | **destroy** |
 | :---: | :---: | :---: |
 | x | y | z |
-## Diff type Object ID
 
-<details><summary>View Diff</summary>
+<details>
+<summary><b>Diff type</b> <code>Object ID</code></summary>
+
 Unified diff
 </details>
 ```
@@ -72,8 +71,6 @@ or
 
 ```markdown
 # Objdiff Summary: Left file <-> Right file
-
-Left file <-> Right file
 
 No changes.
 ```
@@ -112,19 +109,14 @@ Example (reproducing the default markdown output):
 # Objdiff Summary: {{ .Left }} <-> {{ .Right }}
 
 {{ if not .HasDiff -}}
-{{ .Left }} <-> {{ .Right }}
-
 No changes.
 {{ else -}}
-`{{ .Left }}` <-> `{{ .Right }}`
-
 | **add** | **change** | **destroy** |
 | :---: | :---: | :---: |
 | {{ .Stats.Add }} | {{ .Stats.Change }} | {{ .Stats.Destroy }} |
-{{- range .Diffs }}
-## {{ .DiffType }} `{{ .ID }}`
-
-<details><summary>View Diff</summary>
+{{ range .Diffs }}
+<details>
+<summary><b>{{ .DiffType }}</b> <code>{{ .ID }}</code></summary>
 
 ``` diff
 {{ .Diff }}```

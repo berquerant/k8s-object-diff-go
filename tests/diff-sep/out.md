@@ -1,13 +1,11 @@
 # Objdiff Summary: tests/diff-sep/left.yml <-> tests/diff-sep/right.yml
 
-`tests/diff-sep/left.yml` <-> `tests/diff-sep/right.yml`
-
 | **add** | **change** | **destroy** |
 | :---: | :---: | :---: |
 | 0 | 1 | 0 |
-## change `apps/v1@Deployment@@nginx-deployment`
 
-<details><summary>View Diff</summary>
+<details>
+<summary><b>change</b> <code>apps/v1@Deployment@@nginx-deployment</code></summary>
 
 ``` diff
 --- tests/diff-sep/left.yml apps/v1@Deployment@@nginx-deployment

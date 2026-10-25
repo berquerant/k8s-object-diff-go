@@ -1,13 +1,11 @@
 # Objdiff Summary: tests/right-only/left.yml <-> tests/right-only/right.yml
 
-`tests/right-only/left.yml` <-> `tests/right-only/right.yml`
-
 | **add** | **change** | **destroy** |
 | :---: | :---: | :---: |
 | 1 | 0 | 0 |
-## add `v1>Pod>default>nginx`
 
-<details><summary>View Diff</summary>
+<details>
+<summary><b>add</b> <code>v1>Pod>default>nginx</code></summary>
 
 ``` diff
 --- tests/right-only/left.yml v1>Pod>default>nginx

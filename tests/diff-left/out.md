@@ -1,13 +1,11 @@
 # Objdiff Summary: leftlabel <-> tests/diff-left/right.yml
 
-`leftlabel` <-> `tests/diff-left/right.yml`
-
 | **add** | **change** | **destroy** |
 | :---: | :---: | :---: |
 | 0 | 1 | 0 |
-## change `apps/v1>Deployment>>nginx-deployment`
 
-<details><summary>View Diff</summary>
+<details>
+<summary><b>change</b> <code>apps/v1>Deployment>>nginx-deployment</code></summary>
 
 ``` diff
 --- leftlabel apps/v1>Deployment>>nginx-deployment

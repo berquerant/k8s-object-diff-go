@@ -1,13 +1,11 @@
 # Objdiff Summary: tests/diffs-color-verbose/left.yml <-> tests/diffs-color-verbose/right.yml
 
-`tests/diffs-color-verbose/left.yml` <-> `tests/diffs-color-verbose/right.yml`
-
 | **add** | **change** | **destroy** |
 | :---: | :---: | :---: |
 | 1 | 2 | 1 |
-## change `apps/v1>Deployment>>nginx-deployment`
 
-<details><summary>View Diff</summary>
+<details>
+<summary><b>change</b> <code>apps/v1>Deployment>>nginx-deployment</code></summary>
 
 ``` diff
 [31m--- [33mtests/diffs-color-verbose/left.yml apps/v1>Deployment>>nginx-deployment[0m[0m
@@ -33,9 +31,8 @@
 
 </details>
 
-## change `v1>Pod>default>nginx-common`
-
-<details><summary>View Diff</summary>
+<details>
+<summary><b>change</b> <code>v1>Pod>default>nginx-common</code></summary>
 
 ``` diff
 [31m--- [33mtests/diffs-color-verbose/left.yml v1>Pod>default>nginx-common[0m[0m
@@ -50,9 +47,8 @@
 
 </details>
 
-## destroy `v1>Pod>default>nginx-left`
-
-<details><summary>View Diff</summary>
+<details>
+<summary><b>destroy</b> <code>v1>Pod>default>nginx-left</code></summary>
 
 ``` diff
 [31m--- [33mtests/diffs-color-verbose/left.yml v1>Pod>default>nginx-left[0m[0m
@@ -73,9 +69,8 @@
 
 </details>
 
-## add `v1>Pod>default>nginx-right`
-
-<details><summary>View Diff</summary>
+<details>
+<summary><b>add</b> <code>v1>Pod>default>nginx-right</code></summary>
 
 ``` diff
 [31m--- [33mtests/diffs-color-verbose/left.yml v1>Pod>default>nginx-right[0m[0m
