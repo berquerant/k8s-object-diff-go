@@ -1,13 +1,11 @@
 # Objdiff Summary: tests/diff-ignore-labels-semicolon-arg/left.yml <-> tests/diff-ignore-labels-semicolon-arg/right.yml
 
-`tests/diff-ignore-labels-semicolon-arg/left.yml` <-> `tests/diff-ignore-labels-semicolon-arg/right.yml`
-
 | **add** | **change** | **destroy** |
 | :---: | :---: | :---: |
 | 0 | 1 | 0 |
-## change `apps/v1>Deployment>>nginx-deployment`
 
-<details><summary>View Diff</summary>
+<details>
+<summary><b>change</b> <code>apps/v1>Deployment>>nginx-deployment</code></summary>
 
 ``` diff
 --- tests/diff-ignore-labels-semicolon-arg/left.yml apps/v1>Deployment>>nginx-deployment

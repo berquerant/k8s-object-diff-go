@@ -197,7 +197,7 @@ data:
 		c.Out = string(config.OutModeMarkdown)
 		var got bytes.Buffer
 		assert.ErrorIs(t, c.Run(&got, leftFile, rightFile), config.ErrDiffFound)
-		wantTitle := fmt.Sprintf("# Objdiff Summary: %s <-> %s\n\n`%s` <-> `%s`", leftFile, rightFile, leftFile, rightFile)
+		wantTitle := fmt.Sprintf("# Objdiff Summary: %s <-> %s", leftFile, rightFile)
 		assert.Contains(t, got.String(), wantTitle)
 	})
 
@@ -207,7 +207,7 @@ data:
 		c.MarkdownTitle = "Comparison of {{ .LEFT_FILE }} and {{ .RIGHT_FILE }}"
 		var got bytes.Buffer
 		assert.ErrorIs(t, c.Run(&got, leftFile, rightFile), config.ErrDiffFound)
-		wantTitle := fmt.Sprintf("# Comparison of %s and %s\n\n`%s` <-> `%s`", leftFile, rightFile, leftFile, rightFile)
+		wantTitle := fmt.Sprintf("# Comparison of %s and %s", leftFile, rightFile)
 		assert.Contains(t, got.String(), wantTitle)
 	})
 
@@ -218,7 +218,7 @@ data:
 		c.Labels = []string{"prod", "stg"}
 		var got bytes.Buffer
 		assert.ErrorIs(t, c.Run(&got, leftFile, rightFile), config.ErrDiffFound)
-		wantTitle := "# [prod] vs [stg]\n\n`prod` <-> `stg`"
+		wantTitle := "# [prod] vs [stg]"
 		assert.Contains(t, got.String(), wantTitle)
 	})
 
@@ -261,19 +261,14 @@ data:
 	const defaultReproducedTemplate = `# Objdiff Summary: {{ .Left }} <-> {{ .Right }}
 
 {{ if not .HasDiff -}}
-{{ .Left }} <-> {{ .Right }}
-
 No changes.
 {{ else -}}
-` + "`" + `{{ .Left }}` + "`" + ` <-> ` + "`" + `{{ .Right }}` + "`" + `
-
 | **add** | **change** | **destroy** |
 | :---: | :---: | :---: |
 | {{ .Stats.Add }} | {{ .Stats.Change }} | {{ .Stats.Destroy }} |
-{{- range .Diffs }}
-## {{ .DiffType }} ` + "`" + `{{ .ID }}` + "`" + `
-
-<details><summary>View Diff</summary>
+{{ range .Diffs }}
+<details>
+<summary><b>{{ .DiffType }}</b> <code>{{ .ID }}</code></summary>
 
 ` + "``` diff\n" + `{{ .Diff }}` + "```\n" + `
 </details>

@@ -363,48 +363,33 @@ func (p *diffPrinter) printMarkdownDiff(ctx context.Context) error {
 		}
 		summaryNoDiff = fmt.Sprintf(`%s %s
 
-%s <-> %s
-
 No changes.`,
 			heading(0),
 			title,
-			p.left,
-			p.right,
 		)
 		summaryTmpl = fmt.Sprintf(`%s %s
 
-%s <-> %s
-
 | **%s** | **%s** | **%s** |
 | :---: | :---: | :---: |
-| {{ .Add }} | {{ .Change }} | {{ .Destroy }} |`,
+| {{ .Add }} | {{ .Change }} | {{ .Destroy }} |
+`,
 			heading(0),
 			title,
-			"`{{ .Left }}`",
-			"`{{ .Right }}`",
 			internal.DiffTypeAdd,
 			internal.DiffTypeChange,
 			internal.DiffTypeDestroy,
 		)
-		diffTmpl = fmt.Sprintf(`{{ range . }}
-%s {{ .DiffType }} %s
-
-<details><summary>View Diff</summary>
+		diffTmpl = `{{ range . }}
+<details>
+<summary><b>{{ .DiffType }}</b> <code>{{ .ID }}</code></summary>
 
 {{ .Fence }} diff
 {{ .Diff }}{{ .Fence }}
 
 </details>
-{{ end }}`,
-			heading(1),
-			"`{{ .ID }}`",
-		)
+{{ end }}`
 	)
 
-	type Summary struct {
-		Left, Right          string
-		Add, Change, Destroy int
-	}
 	type Item struct {
 		ID, Diff, DiffType, Fence string
 	}
@@ -419,13 +404,6 @@ No changes.`,
 	}
 
 	stats := countDiffStats(diffs)
-	summary := Summary{
-		Left:    p.left,
-		Right:   p.right,
-		Add:     stats.Add,
-		Change:  stats.Change,
-		Destroy: stats.Destroy,
-	}
 	items := make([]Item, 0, len(diffs))
 	for _, d := range diffs {
 		items = append(items, Item{
@@ -440,7 +418,7 @@ No changes.`,
 	if err != nil {
 		return fmt.Errorf("failed to parse markdown summary template: %w", err)
 	}
-	if err := summaryTemplate.Execute(p.out, summary); err != nil {
+	if err := summaryTemplate.Execute(p.out, stats); err != nil {
 		return fmt.Errorf("failed to execute markdown summary template: %w", err)
 	}
 
