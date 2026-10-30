@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/berquerant/k8s-object-diff-go/version"
@@ -75,6 +76,7 @@ func (c *Config) RunMCP(ctx context.Context) error {
 func (c *Config) runDiffTool(ctx context.Context, params DiffToolParams) (DiffToolResult, error) {
 	// Create a deep copy of config and apply param overrides
 	cfg := c.Clone()
+	cfg.MCP = true
 
 	cfg.applyOverrides(params)
 
@@ -157,24 +159,48 @@ func (cfg *Config) applyOverrides(params DiffToolParams) {
 }
 
 func openInput(pathOrContent, defaultLabel string) (io.Reader, func(), string, error) {
-	if isFile(pathOrContent) {
-		f, err := os.Open(pathOrContent)
+	if isAllowedManifestFile(pathOrContent) {
+		clean := filepath.Clean(pathOrContent)
+		f, err := os.Open(clean)
 		if err != nil {
 			return nil, nil, "", err
 		}
 		return f, func() { _ = f.Close() }, pathOrContent, nil
 	}
+	// If pathOrContent contains no newlines and looks like an absolute path or path traversal targeting system files,
+	// reject it to avoid unintended file probing or confused string fallback.
+	if !strings.Contains(pathOrContent, "\n") && (filepath.IsAbs(pathOrContent) || strings.HasPrefix(pathOrContent, "..")) {
+		return nil, nil, "", fmt.Errorf("access to file path %q is not allowed: %w", pathOrContent, os.ErrPermission)
+	}
 	return strings.NewReader(pathOrContent), func() {}, defaultLabel, nil
 }
 
-func isFile(pathOrContent string) bool {
-	if strings.Contains(pathOrContent, "\n") {
+func isAllowedManifestFile(path string) bool {
+	if strings.Contains(path, "\n") {
 		return false
 	}
-	info, err := os.Stat(pathOrContent)
-	if err != nil {
+	clean := filepath.Clean(path)
+	// Check against sensitive path components
+	parts := strings.Split(filepath.ToSlash(clean), "/")
+	for _, p := range parts {
+		switch strings.ToLower(p) {
+		case ".ssh", ".aws", ".kube", ".gnupg", ".git", ".env", "etc", "proc", "sys", "dev":
+			return false
+		}
+	}
+	// Restrict to allowed manifest extensions
+	ext := strings.ToLower(filepath.Ext(clean))
+	switch ext {
+	case ".yaml", ".yml", ".json":
+		// allowed manifest extensions
+	default:
 		return false
 	}
-	return !info.IsDir()
+
+	info, err := os.Stat(clean)
+	if err != nil || info.IsDir() {
+		return false
+	}
+	return true
 }
 

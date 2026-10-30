@@ -23,9 +23,6 @@ func TestEndToEnd(t *testing.T) {
 		t.Fatalf("%s help %v", e.cmd, err)
 	}
 
-	//
-	// Run golden tests
-	//
 	const testDir = "../../tests"
 	cases, err := os.ReadDir(testDir)
 	if err != nil {
@@ -35,138 +32,130 @@ func TestEndToEnd(t *testing.T) {
 		if !c.IsDir() {
 			continue
 		}
-
 		t.Run(c.Name(), func(t *testing.T) {
-			dir := filepath.Join(testDir, c.Name())
-
-			readAll := func(name string) (string, error) {
-				f, err := os.Open(filepath.Join(dir, name))
-				if err != nil {
-					return "", err
-				}
-				defer f.Close()
-				b, err := io.ReadAll(f)
-				if err != nil {
-					return "", err
-				}
-				return string(b), nil
-			}
-
-			additionalArgs := []string{}
-			if s, err := readAll("arg.txt"); err == nil {
-				s = strings.TrimSpace(s)
-				if strings.Contains(s, "\n") {
-					for _, line := range strings.Split(s, "\n") {
-						if line = strings.TrimSpace(line); line != "" {
-							additionalArgs = append(additionalArgs, line)
-						}
-					}
-				} else {
-					additionalArgs = strings.Split(s, " ")
-				}
-			}
-
-			additionalEnvs := []string{}
-			if s, err := readAll("env.txt"); err == nil {
-				additionalEnvs = strings.Split(strings.TrimSpace(s), " ")
-			}
-
-			run := func(out string) (string, error) {
-				var buf bytes.Buffer
-				args := []string{
-					filepath.Join("tests", c.Name(), "left.yml"),
-					filepath.Join("tests", c.Name(), "right.yml"),
-					"-o", out, "--success",
-				}
-				args = append(args, additionalArgs...)
-				t.Logf("run:%v", args)
-				cmd := exec.Command(e.cmd, args...)
-				cmd.Dir = "../.."
-				cmd.Stdout = &buf
-				cmd.Stderr = os.Stderr
-				if len(additionalEnvs) > 0 {
-					cmd.Env = append(os.Environ(), additionalEnvs...)
-				}
-				if err := cmd.Run(); err != nil {
-					return "", err
-				}
-				return buf.String(), nil
-			}
-
-			hasTemplateArg := func() bool {
-				for _, a := range additionalArgs {
-					if a == "--template" || a == "-T" || strings.HasPrefix(a, "--template=") || strings.HasPrefix(a, "-T=") {
-						return true
-					}
-				}
-				return false
-			}
-
-			var testCases []struct {
-				name string
-				file string
-			}
-			if hasTemplateArg() {
-				testCases = []struct {
-					name string
-					file string
-				}{
-					{
-						name: "template",
-						file: "out.template",
-					},
-				}
-			} else {
-				testCases = []struct {
-					name string
-					file string
-				}{
-					{
-						name: "id",
-						file: "out.id",
-					},
-					{
-						name: "text",
-						file: "out.txt",
-					},
-					{
-						name: "yaml",
-						file: "out.yml",
-					},
-					{
-						name: "idlist",
-						file: "out.idlist",
-					},
-					{
-						name: "markdown",
-						file: "out.md",
-					},
-				}
-			}
-
-			for _, tc := range testCases {
-				t.Run(tc.name, func(t *testing.T) {
-					got, err := run(tc.name)
-					if !assert.Nil(t, err) {
-						return
-					}
-
-					if *update {
-						if err := os.WriteFile(filepath.Join(dir, tc.file), []byte(got), 0o644); err != nil {
-							t.Fatalf("failed to update golden file: %v", err)
-						}
-						return
-					}
-
-					want, err := readAll(tc.file)
-					if !assert.Nil(t, err) {
-						return
-					}
-					assert.Equal(t, want, got)
-				})
-			}
+			runGoldenCase(t, e.cmd, testDir, c.Name())
 		})
 	}
+}
+
+type goldenTestCase struct {
+	name string
+	file string
+}
+
+func getGoldenTestCases(hasTemplate bool) []goldenTestCase {
+	if hasTemplate {
+		return []goldenTestCase{
+			{name: "template", file: "out.template"},
+		}
+	}
+	return []goldenTestCase{
+		{name: "id", file: "out.id"},
+		{name: "text", file: "out.txt"},
+		{name: "yaml", file: "out.yml"},
+		{name: "idlist", file: "out.idlist"},
+		{name: "markdown", file: "out.md"},
+	}
+}
+
+func runGoldenCase(t *testing.T, cmdPath, testDir, caseName string) {
+	t.Helper()
+	dir := filepath.Join(testDir, caseName)
+	additionalArgs := parseGoldenArgs(dir)
+	additionalEnvs := parseGoldenEnvs(dir)
+	testCases := getGoldenTestCases(hasTemplateArg(additionalArgs))
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := executeGoldenDiff(t, cmdPath, caseName, tc.name, additionalArgs, additionalEnvs)
+			if !assert.Nil(t, err) {
+				return
+			}
+			goldenFilePath := filepath.Join(dir, tc.file)
+			if *update {
+				if err := os.WriteFile(goldenFilePath, []byte(got), 0o644); err != nil {
+					t.Fatalf("failed to update golden file: %v", err)
+				}
+				return
+			}
+			want, err := readAllFile(goldenFilePath)
+			if !assert.Nil(t, err) {
+				return
+			}
+			assert.Equal(t, want, got)
+		})
+	}
+}
+
+func executeGoldenDiff(t *testing.T, cmdPath, caseName, outMode string, args, envs []string) (string, error) {
+	t.Helper()
+	var buf bytes.Buffer
+	cmdArgs := []string{
+		filepath.Join("tests", caseName, "left.yml"),
+		filepath.Join("tests", caseName, "right.yml"),
+		"-o", outMode, "--success",
+	}
+	cmdArgs = append(cmdArgs, args...)
+	t.Logf("run:%v", cmdArgs)
+	c := exec.Command(cmdPath, cmdArgs...)
+	c.Dir = "../.."
+	c.Stdout = &buf
+	c.Stderr = os.Stderr
+	if len(envs) > 0 {
+		c.Env = append(os.Environ(), envs...)
+	}
+	if err := c.Run(); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+func readAllFile(filePath string) (string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	b, err := io.ReadAll(f)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func parseGoldenArgs(dir string) []string {
+	s, err := readAllFile(filepath.Join(dir, "arg.txt"))
+	if err != nil {
+		return nil
+	}
+	s = strings.TrimSpace(s)
+	if strings.Contains(s, "\n") {
+		var args []string
+		for _, line := range strings.Split(s, "\n") {
+			if trimmed := strings.TrimSpace(line); trimmed != "" {
+				args = append(args, trimmed)
+			}
+		}
+		return args
+	}
+	return strings.Split(s, " ")
+}
+
+func parseGoldenEnvs(dir string) []string {
+	s, err := readAllFile(filepath.Join(dir, "env.txt"))
+	if err != nil {
+		return nil
+	}
+	return strings.Split(strings.TrimSpace(s), " ")
+}
+
+func hasTemplateArg(args []string) bool {
+	for _, a := range args {
+		if a == "--template" || a == "-T" || strings.HasPrefix(a, "--template=") || strings.HasPrefix(a, "-T=") {
+			return true
+		}
+	}
+	return false
 }
 
 func run(name string, arg ...string) error {

@@ -64,10 +64,16 @@ func NewYamlUnmarshaler[T any](r io.Reader, t T, allowDuplicateMapKey bool) *Yam
 	}
 }
 
+const maxManifestReadLimit = 50 * 1024 * 1024 // 50MB
+
 func (y *YamlUnmarshaler[T]) Unmarshal(ctx context.Context) ([]T, error) {
-	b, err := io.ReadAll(y.r)
+	limitedReader := io.LimitReader(y.r, maxManifestReadLimit+1)
+	b, err := io.ReadAll(limitedReader)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal read: %w", err)
+	}
+	if len(b) > maxManifestReadLimit {
+		return nil, fmt.Errorf("manifest exceeds maximum allowed size of %d bytes", maxManifestReadLimit)
 	}
 
 	var opts []parser.Option

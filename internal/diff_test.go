@@ -11,42 +11,81 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestProcessObjectDiffBuilder(t *testing.T) {
-	const (
-		command           = "./diff_test.sh"
-		anyString         = "ANY"
-		leftFile          = "LEFT"
-		rightFile         = "RIGHT"
-		diffContext       = 3
-		diffContextString = "3"
-		objectID          = "OBJECT_ID"
+const (
+	diffTestCommand           = "./diff_test.sh"
+	diffTestAnyString         = "ANY"
+	diffTestLeftFile          = "LEFT"
+	diffTestRightFile         = "RIGHT"
+	diffTestDiffContext       = 3
+	diffTestDiffContextString = "3"
+	diffTestObjectID          = "OBJECT_ID"
 
-		diffTestExitCode = "EXIT_CODE"
-		exitSuccess      = 0
-		exitDiff         = 1
-		exitFailure      = 2
+	diffTestEnvExitCode = "EXIT_CODE"
+	diffTestExitSuccess = 0
+	diffTestExitDiff    = 1
+	diffTestExitFailure = 2
+)
+
+func verifyProcessObjectDiff(
+	t *testing.T,
+	args []string,
+	color bool,
+	pair *internal.ObjectPair,
+	exitCode int,
+	noDiff, wantErr bool,
+	passedArgs []string,
+) {
+	t.Helper()
+	_ = os.Setenv(diffTestEnvExitCode, strconv.Itoa(exitCode))
+	defer os.Unsetenv(diffTestEnvExitCode)
+
+	x := internal.NewObjectDiffBuilder(
+		internal.NewProcessDiffer(diffTestCommand, args),
+		diffTestLeftFile, diffTestRightFile,
+		diffTestDiffContext,
+		color,
 	)
-	var (
-		noDiffPair = &internal.ObjectPair{
-			ID:    objectID,
-			Left:  &internal.Object{},
-			Right: &internal.Object{},
+	got, err := x.ObjectDiff(context.TODO(), pair)
+	if wantErr {
+		assert.NotNil(t, err)
+		return
+	}
+	if !assert.Nil(t, err) {
+		return
+	}
+	assert.Equal(t, pair, got.Pair)
+	if noDiff {
+		assert.Empty(t, got.Diff)
+		return
+	}
+	passed := strings.Split(got.Diff, " ")
+	if !assert.Equal(t, len(passedArgs), len(passed), "want:%#v\ngot:%#v", passedArgs, passed) {
+		return
+	}
+	for i, w := range passedArgs {
+		g := passed[i]
+		if w == diffTestAnyString {
+			continue
 		}
-		diffPair = &internal.ObjectPair{
-			ID:   objectID,
-			Left: &internal.Object{},
-			Right: &internal.Object{
-				Body: "BODY",
-			},
-		}
-	)
+		assert.Equal(t, w, g, "passed[%d]", i)
+	}
+}
+
+func TestProcessObjectDiffBuilder(t *testing.T) {
+	noDiffPair := &internal.ObjectPair{
+		ID:    diffTestObjectID,
+		Left:  &internal.Object{},
+		Right: &internal.Object{},
+	}
+	diffPair := &internal.ObjectPair{
+		ID:    diffTestObjectID,
+		Left:  &internal.Object{},
+		Right: &internal.Object{Body: "BODY"},
+	}
 
 	for _, tc := range []struct {
-		title string
-		args  []string
-		// left        string
-		// right       string
-		// diffContext int
+		title      string
+		args       []string
 		color      bool
 		pair       *internal.ObjectPair
 		noDiff     bool
@@ -57,20 +96,20 @@ func TestProcessObjectDiffBuilder(t *testing.T) {
 		{
 			title:    "exit_2",
 			pair:     diffPair,
-			exitCode: exitFailure,
+			exitCode: diffTestExitFailure,
 			err:      true,
 		},
 		{
 			title:    "exit_1",
 			pair:     diffPair,
-			exitCode: exitDiff,
+			exitCode: diffTestExitDiff,
 			color:    true,
 			passedArgs: []string{
-				"--unified=" + diffContextString,
+				"--unified=" + diffTestDiffContextString,
 				"--color=always",
-				"--label", "\x1b[33m" + leftFile, objectID + "\x1b[0m", // due to strings.Split
-				"--label", "\x1b[33m" + rightFile, objectID + "\x1b[0m", // due to strings.Split
-				anyString, anyString,
+				"--label", "\x1b[33m" + diffTestLeftFile, diffTestObjectID + "\x1b[0m",
+				"--label", "\x1b[33m" + diffTestRightFile, diffTestObjectID + "\x1b[0m",
+				diffTestAnyString, diffTestAnyString,
 			},
 		},
 		{
@@ -79,26 +118,26 @@ func TestProcessObjectDiffBuilder(t *testing.T) {
 			args: []string{
 				"added",
 			},
-			exitCode: exitSuccess,
+			exitCode: diffTestExitSuccess,
 			passedArgs: []string{
-				"--unified=" + diffContextString,
+				"--unified=" + diffTestDiffContextString,
 				"--color=never",
-				"--label", leftFile, objectID, // due to strings.Split
-				"--label", rightFile, objectID, // due to strings.Split
+				"--label", diffTestLeftFile, diffTestObjectID,
+				"--label", diffTestRightFile, diffTestObjectID,
 				"added",
-				anyString, anyString,
+				diffTestAnyString, diffTestAnyString,
 			},
 		},
 		{
 			title:    "exit_0",
 			pair:     diffPair,
-			exitCode: exitSuccess,
+			exitCode: diffTestExitSuccess,
 			passedArgs: []string{
-				"--unified=" + diffContextString,
+				"--unified=" + diffTestDiffContextString,
 				"--color=never",
-				"--label", leftFile, objectID, // due to strings.Split
-				"--label", rightFile, objectID, // due to strings.Split
-				anyString, anyString,
+				"--label", diffTestLeftFile, diffTestObjectID,
+				"--label", diffTestRightFile, diffTestObjectID,
+				diffTestAnyString, diffTestAnyString,
 			},
 		},
 		{
@@ -108,41 +147,16 @@ func TestProcessObjectDiffBuilder(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			_ = os.Setenv(diffTestExitCode, strconv.Itoa(tc.exitCode))
-			defer os.Unsetenv(diffTestExitCode)
-
-			x := internal.NewObjectDiffBuilder(
-				internal.NewProcessDiffer(command, tc.args),
-				leftFile, rightFile,
-				diffContext,
+			verifyProcessObjectDiff(
+				t,
+				tc.args,
 				tc.color,
+				tc.pair,
+				tc.exitCode,
+				tc.noDiff,
+				tc.err,
+				tc.passedArgs,
 			)
-			got, err := x.ObjectDiff(context.TODO(), tc.pair)
-			if tc.err {
-				assert.NotNil(t, err)
-				return
-			}
-			if !assert.Nil(t, err) {
-				return
-			}
-			assert.Equal(t, tc.pair, got.Pair)
-			if tc.noDiff {
-				assert.Empty(t, got.Diff)
-				return
-			}
-			passed := strings.Split(got.Diff, " ")
-			if !assert.Equal(t, len(tc.passedArgs), len(passed),
-				"want:%#v\ngot:%#v", tc.passedArgs, passed,
-			) {
-				return
-			}
-			for i, w := range tc.passedArgs {
-				g := passed[i]
-				if w == anyString {
-					continue
-				}
-				assert.Equal(t, w, g, "passed[%i], i")
-			}
 		})
 	}
 }

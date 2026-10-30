@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/mikefarah/yq/v4/pkg/yqlib"
@@ -40,33 +41,53 @@ func NewFieldFilter(fieldPaths []string) *YqFilter {
 	if len(fieldPaths) == 0 {
 		return nil
 	}
-	exprs := make([]string, len(fieldPaths))
-	for i, p := range fieldPaths {
+	exprs := make([]string, 0, len(fieldPaths))
+	for _, p := range fieldPaths {
 		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
 		if isDelExpression(p) {
-			exprs[i] = p
+			exprs = append(exprs, p)
+			continue
+		}
+		if containsDangerousYqKeyword(p) || strings.ContainsAny(p, "|;=") {
 			continue
 		}
 		if !strings.HasPrefix(p, ".") {
 			p = "." + p
 		}
-		exprs[i] = fmt.Sprintf("del(%s)", p)
+		exprs = append(exprs, fmt.Sprintf("del(%s)", p))
 	}
 	return NewYqFilter(exprs)
+}
+
+var dangerousYqRegex = regexp.MustCompile(`(?i)\b(load_props|load_str|load_xml|load|strenv|env|eval|system)\b`)
+
+func containsDangerousYqKeyword(s string) bool {
+	return dangerousYqRegex.MatchString(s)
 }
 
 func isDelExpression(p string) bool {
 	if !strings.HasSuffix(p, ")") {
 		return false
 	}
+	var inner string
 	if strings.HasPrefix(p, "del(") {
-		return true
-	}
-	if strings.HasPrefix(p, "del") {
+		inner = p[4 : len(p)-1]
+	} else if strings.HasPrefix(p, "del") {
 		rest := strings.TrimSpace(p[3:])
-		return strings.HasPrefix(rest, "(")
+		if !strings.HasPrefix(rest, "(") {
+			return false
+		}
+		inner = rest[1 : len(rest)-1]
+	} else {
+		return false
 	}
-	return false
+	if strings.ContainsAny(inner, "|;=") {
+		return false
+	}
+	return !containsDangerousYqKeyword(inner)
 }
 
 // NewLabelFilter creates a [YqFilter] for removing label keys across metadata and nested pod templates.
@@ -83,10 +104,16 @@ func newMapKeyFilter(mapName string, keys []string) *YqFilter {
 	if len(keys) == 0 {
 		return nil
 	}
-	exprs := make([]string, len(keys))
-	for i, k := range keys {
+	exprs := make([]string, 0, len(keys))
+	for _, k := range keys {
 		k = strings.TrimSpace(k)
-		exprs[i] = fmt.Sprintf(`del(.. | .%s?."%s"?)`, mapName, escapeYqString(k))
+		if k == "" {
+			continue
+		}
+		if containsDangerousYqKeyword(k) || strings.ContainsAny(k, "\"\\|;=\n\r\t") {
+			continue
+		}
+		exprs = append(exprs, fmt.Sprintf(`del(.. | .%s?."%s"?)`, mapName, escapeYqString(k)))
 	}
 	return NewYqFilter(exprs)
 }
@@ -107,5 +134,10 @@ func (f *YqFilter) FilterBody(body string) (string, error) {
 }
 
 func escapeYqString(s string) string {
-	return strings.ReplaceAll(s, `"`, `\"`)
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `"`, `\"`)
+	s = strings.ReplaceAll(s, "\n", `\n`)
+	s = strings.ReplaceAll(s, "\r", `\r`)
+	s = strings.ReplaceAll(s, "\t", `\t`)
+	return s
 }

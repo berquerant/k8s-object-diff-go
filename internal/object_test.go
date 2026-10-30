@@ -39,6 +39,32 @@ func TestObjectHeader(t *testing.T) {
 			sep:  ">",
 			want: "rbac.authorization.k8s.io/v1>ClusterRole>>test",
 		},
+		{
+			title: "escape separator in name",
+			obj: internal.ObjectHeader{
+				APIVersion: "v1",
+				Kind:       "ConfigMap",
+				Metadata: internal.ObjectMeta{
+					Namespace: "ns",
+					Name:      "foo>bar",
+				},
+			},
+			sep:  ">",
+			want: `v1>ConfigMap>ns>foo\>bar`,
+		},
+		{
+			title: "custom separator hyphen escaping",
+			obj: internal.ObjectHeader{
+				APIVersion: "apps/v1",
+				Kind:       "Deployment",
+				Metadata: internal.ObjectMeta{
+					Namespace: "my-ns",
+					Name:      "app-name",
+				},
+			},
+			sep:  "-",
+			want: `apps/v1-Deployment-my\-ns-app\-name`,
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			got := tc.obj.IntoID(tc.sep)

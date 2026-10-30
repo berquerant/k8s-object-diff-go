@@ -1,9 +1,8 @@
 package internal_test
 
 import (
+	"context"
 	"encoding/json"
-	"log/slog"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -64,44 +63,69 @@ line2
 	})
 }
 
-func TestDMP(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
-	slog.SetDefault(logger)
+const (
+	dmpTestLeftLabel  = "LEFT"
+	dmpTestRightLabel = "RIGHT"
+)
 
-	const (
-		leftLabel  = "LEFT"
-		rightLabel = "RIGHT"
-	)
-	newResult := func(patches ...*internal.DMPPatch) *internal.DMPResult {
-		return &internal.DMPResult{
-			LeftLabel:  leftLabel,
-			RightLabel: rightLabel,
-			Patches:    patches,
-		}
+type dmpTestCase struct {
+	title       string
+	left        string
+	right       string
+	contextSize int
+	want        *internal.DMPResult
+	noDiff      bool
+}
+
+func newDMPResult(patches ...*internal.DMPPatch) *internal.DMPResult {
+	return &internal.DMPResult{
+		LeftLabel:  dmpTestLeftLabel,
+		RightLabel: dmpTestRightLabel,
+		Patches:    patches,
 	}
-	lines := func(i, j int) string {
-		v := make([]string, j-i+1)
-		for t := range v {
-			v[t] = strconv.Itoa(t + i)
-		}
-		return strings.Join(v, "\n") + "\n"
+}
+
+func dmpLines(i, j int) string {
+	v := make([]string, j-i+1)
+	for t := range v {
+		v[t] = strconv.Itoa(t + i)
 	}
-	for _, tc := range []struct {
-		title       string
-		left        string
-		right       string
-		contextSize int
-		want        *internal.DMPResult
-		noDiff      bool
-	}{
+	return strings.Join(v, "\n") + "\n"
+}
+
+func runDMPTests(t *testing.T, cases []dmpTestCase) {
+	t.Helper()
+	for _, tc := range cases {
+		t.Run(tc.title, func(t *testing.T) {
+			dmp := &internal.DMP{
+				LeftLabel:  dmpTestLeftLabel,
+				RightLabel: dmpTestRightLabel,
+				Context:    tc.contextSize,
+			}
+			got, err := dmp.Diff(tc.left, tc.right)
+			if tc.noDiff {
+				assert.ErrorIs(t, err, internal.ErrDMPNoDiff, tc.title)
+				return
+			}
+			if !assert.Nil(t, err, tc.title) {
+				return
+			}
+
+			wantJSON, _ := json.Marshal(tc.want)
+			gotJSON, _ := json.Marshal(got)
+			assert.Equal(t, tc.want, got, "%s:\nWANT\n%s\nGOT\n%s", tc.title, wantJSON, gotJSON)
+		})
+	}
+}
+
+func TestDMP_SplitLarge(t *testing.T) {
+	runDMPTests(t, []dmpTestCase{
 		{
 			title:       "split large",
-			left:        lines(1, 3) + lines(4, 4) + lines(6, 12) + lines(13, 14) + lines(21, 30),
-			right:       lines(1, 3) + lines(5, 5) + lines(6, 12) + lines(15, 20) + lines(21, 30) + lines(31, 33),
+			left:        dmpLines(1, 3) + dmpLines(4, 4) + dmpLines(6, 12) + dmpLines(13, 14) + dmpLines(21, 30),
+			right:       dmpLines(1, 3) + dmpLines(5, 5) + dmpLines(6, 12) + dmpLines(15, 20) + dmpLines(21, 30) + dmpLines(31, 33),
 			contextSize: 3,
-			want: newResult(&internal.DMPPatch{
+			want: newDMPResult(&internal.DMPPatch{
 				LeftStart:   1,
 				LeftLength:  7,
 				RightStart:  1,
@@ -109,19 +133,19 @@ func TestDMP(t *testing.T) {
 				Hunks: []*internal.DMPHunk{
 					{
 						Op:   internal.DMPOpEqual,
-						Body: lines(1, 3),
+						Body: dmpLines(1, 3),
 					},
 					{
 						Op:   internal.DMPOpDelete,
-						Body: lines(4, 4),
+						Body: dmpLines(4, 4),
 					},
 					{
 						Op:   internal.DMPOpInsert,
-						Body: lines(5, 5),
+						Body: dmpLines(5, 5),
 					},
 					{
 						Op:   internal.DMPOpEqual,
-						Body: lines(6, 8),
+						Body: dmpLines(6, 8),
 					},
 				},
 			}, &internal.DMPPatch{
@@ -132,19 +156,19 @@ func TestDMP(t *testing.T) {
 				Hunks: []*internal.DMPHunk{
 					{
 						Op:   internal.DMPOpEqual,
-						Body: lines(10, 12),
+						Body: dmpLines(10, 12),
 					},
 					{
 						Op:   internal.DMPOpDelete,
-						Body: lines(13, 14),
+						Body: dmpLines(13, 14),
 					},
 					{
 						Op:   internal.DMPOpInsert,
-						Body: lines(15, 20),
+						Body: dmpLines(15, 20),
 					},
 					{
 						Op:   internal.DMPOpEqual,
-						Body: lines(21, 23),
+						Body: dmpLines(21, 23),
 					},
 				},
 			}, &internal.DMPPatch{
@@ -155,15 +179,20 @@ func TestDMP(t *testing.T) {
 				Hunks: []*internal.DMPHunk{
 					{
 						Op:   internal.DMPOpEqual,
-						Body: lines(28, 30),
+						Body: dmpLines(28, 30),
 					},
 					{
 						Op:   internal.DMPOpInsert,
-						Body: lines(31, 33),
+						Body: dmpLines(31, 33),
 					},
 				},
 			}),
 		},
+	})
+}
+
+func TestDMP_SplitHunks(t *testing.T) {
+	runDMPTests(t, []dmpTestCase{
 		{
 			title: "split hunks2",
 			left: `line1
@@ -186,7 +215,7 @@ line9
 line10
 `,
 			contextSize: 2,
-			want: newResult(&internal.DMPPatch{
+			want: newDMPResult(&internal.DMPPatch{
 				LeftStart:   1,
 				LeftLength:  4,
 				RightStart:  1,
@@ -231,6 +260,15 @@ line10
 				},
 			}),
 		},
+	})
+}
+
+func newResult(patches ...*internal.DMPPatch) *internal.DMPResult {
+	return newDMPResult(patches...)
+}
+
+func TestDMP_ContextGrouping(t *testing.T) {
+	runDMPTests(t, []dmpTestCase{
 		{
 			title: "do not split hunks",
 			left: `line1
@@ -283,6 +321,11 @@ line7
 				},
 			}),
 		},
+	})
+}
+
+func TestDMP_SplitHunksContext(t *testing.T) {
+	runDMPTests(t, []dmpTestCase{
 		{
 			title: "split hunks",
 			left: `line1
@@ -343,6 +386,11 @@ line7
 				},
 			}),
 		},
+	})
+}
+
+func TestDMP_MiddleInsert(t *testing.T) {
+	runDMPTests(t, []dmpTestCase{
 		{
 			title: "middle insert",
 			left: `line1
@@ -383,6 +431,11 @@ line5
 				},
 			}),
 		},
+	})
+}
+
+func TestDMP_EdgeCases(t *testing.T) {
+	runDMPTests(t, []dmpTestCase{
 		{
 			title: "ends with delete",
 			left: `line1
@@ -449,6 +502,11 @@ line3
 				},
 			}),
 		},
+	})
+}
+
+func TestDMP_Boundaries(t *testing.T) {
+	runDMPTests(t, []dmpTestCase{
 		{
 			title:       "all empty",
 			contextSize: 3,
@@ -491,25 +549,61 @@ line3
 				},
 			}),
 		},
+	})
+}
+
+func TestDMPDiffContext(t *testing.T) {
+	for _, tc := range []struct {
+		title     string
+		left      string
+		right     string
+		cancel    bool
+		wantErrIs error
+		checkDiff bool
+	}{
+		{
+			title:     "canceled context returns context.Canceled",
+			left:      "left text\n",
+			right:     "right text\n",
+			cancel:    true,
+			wantErrIs: context.Canceled,
+		},
+		{
+			title:     "active context with differences succeeds",
+			left:      "left text\n",
+			right:     "right text\n",
+			cancel:    false,
+			checkDiff: true,
+		},
+		{
+			title:     "active context with identical inputs returns ErrDMPNoDiff",
+			left:      "same text\n",
+			right:     "same text\n",
+			cancel:    false,
+			wantErrIs: internal.ErrDMPNoDiff,
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
+			ctx, cancelFunc := context.WithCancel(context.Background())
+			defer cancelFunc()
+			if tc.cancel {
+				cancelFunc()
+			}
 			dmp := &internal.DMP{
-				LeftLabel:  leftLabel,
-				RightLabel: rightLabel,
-				Context:    tc.contextSize,
+				LeftLabel:  "left",
+				RightLabel: "right",
+				Context:    3,
 			}
-			got, err := dmp.Diff(tc.left, tc.right)
-			if tc.noDiff {
-				assert.ErrorIs(t, err, internal.ErrDMPNoDiff, tc.title)
+			res, err := dmp.DiffContext(ctx, tc.left, tc.right)
+			if tc.wantErrIs != nil {
+				assert.ErrorIs(t, err, tc.wantErrIs)
 				return
 			}
-			if !assert.Nil(t, err, tc.title) {
-				return
+			assert.NoError(t, err)
+			if tc.checkDiff {
+				assert.NotNil(t, res)
+				assert.NotEmpty(t, res.Patches)
 			}
-
-			wantJSON, _ := json.Marshal(tc.want)
-			gotJSON, _ := json.Marshal(got)
-			assert.Equal(t, tc.want, got, "%s:\nWANT\n%s\nGOT\n%s", tc.title, wantJSON, gotJSON)
 		})
 	}
 }

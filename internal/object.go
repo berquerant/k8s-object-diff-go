@@ -16,12 +16,19 @@ type ObjectMeta struct {
 	Name      string `yaml:"name"`
 }
 
+func escapeSep(s, sep string) string {
+	if sep == "" || !strings.Contains(s, sep) {
+		return s
+	}
+	return strings.ReplaceAll(s, sep, `\`+sep)
+}
+
 func (s ObjectHeader) IntoID(sep string) string {
 	return strings.Join([]string{
-		s.APIVersion,
-		s.Kind,
-		s.Metadata.Namespace,
-		s.Metadata.Name,
+		escapeSep(s.APIVersion, sep),
+		escapeSep(s.Kind, sep),
+		escapeSep(s.Metadata.Namespace, sep),
+		escapeSep(s.Metadata.Name, sep),
 	}, sep)
 }
 

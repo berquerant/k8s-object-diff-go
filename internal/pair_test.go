@@ -5,91 +5,154 @@ import (
 
 	"github.com/berquerant/k8s-object-diff-go/internal"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestObjectPair(t *testing.T) {
+type expectedPair struct {
+	id        string
+	hasLeft   bool
+	hasRight  bool
+	isMissing bool
+}
+
+func newTestObj(apiVersion, kind, namespace, name string) *internal.Object {
+	return &internal.Object{
+		Header: internal.ObjectHeader{
+			APIVersion: apiVersion,
+			Kind:       kind,
+			Metadata: internal.ObjectMeta{
+				Namespace: namespace,
+				Name:      name,
+			},
+		},
+	}
+}
+
+func verifyObjectPairs(t *testing.T, sep string, leftObjs, rightObjs []*internal.Object, wantPairs []expectedPair) {
+	t.Helper()
+	leftMap := internal.NewObjectMap(sep)
+	for _, obj := range leftObjs {
+		leftMap.Add(obj)
+	}
+	rightMap := internal.NewObjectMap(sep)
+	for _, obj := range rightObjs {
+		rightMap.Add(obj)
+	}
+
+	pairMap := internal.NewObjectPairMap(leftMap, rightMap)
+	got := pairMap.ObjectPairs()
+	require.Len(t, got, len(wantPairs))
+
+	for i, want := range wantPairs {
+		pair := got[i]
+		assert.Equal(t, want.id, pair.ID)
+		assert.Equal(t, want.isMissing, pair.IsMissing())
+		if want.hasLeft {
+			assert.NotNil(t, pair.Left)
+			assert.Equal(t, want.id, pair.Left.Header.IntoID(sep))
+		} else {
+			assert.Nil(t, pair.Left)
+		}
+		if want.hasRight {
+			assert.NotNil(t, pair.Right)
+			assert.Equal(t, want.id, pair.Right.Header.IntoID(sep))
+		} else {
+			assert.Nil(t, pair.Right)
+		}
+	}
+}
+
+func TestObjectPair_SingleSide(t *testing.T) {
 	const sep = ">"
+	for _, tc := range []struct {
+		title     string
+		leftObjs  []*internal.Object
+		rightObjs []*internal.Object
+		wantPairs []expectedPair
+	}{
+		{
+			title:     "empty maps produce no pairs",
+			leftObjs:  nil,
+			rightObjs: nil,
+			wantPairs: []expectedPair{},
+		},
+		{
+			title: "left only produces destroy pair",
+			leftObjs: []*internal.Object{
+				newTestObj("v1", "Pod", "default", "p1"),
+			},
+			rightObjs: nil,
+			wantPairs: []expectedPair{
+				{
+					id:        "v1>Pod>default>p1",
+					hasLeft:   true,
+					hasRight:  false,
+					isMissing: false,
+				},
+			},
+		},
+		{
+			title:    "right only produces add pair",
+			leftObjs: nil,
+			rightObjs: []*internal.Object{
+				newTestObj("v1", "Pod", "default", "p2"),
+			},
+			wantPairs: []expectedPair{
+				{
+					id:        "v1>Pod>default>p2",
+					hasLeft:   false,
+					hasRight:  true,
+					isMissing: false,
+				},
+			},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			verifyObjectPairs(t, sep, tc.leftObjs, tc.rightObjs, tc.wantPairs)
+		})
+	}
+}
 
-	t.Run("empty", func(t *testing.T) {
-		assert.Empty(t, internal.NewObjectPairMap(
-			internal.NewObjectMap(sep),
-			internal.NewObjectMap(sep),
-		).ObjectPairs())
+func TestObjectPair_Mixed(t *testing.T) {
+	const sep = ">"
+	tc := struct {
+		title     string
+		leftObjs  []*internal.Object
+		rightObjs []*internal.Object
+		wantPairs []expectedPair
+	}{
+		title: "mixed pairs sorted by object ID",
+		leftObjs: []*internal.Object{
+			newTestObj("v1", "k1", "default", "n1"),
+			newTestObj("v1", "k1", "default", "n2"),
+		},
+		rightObjs: []*internal.Object{
+			newTestObj("v1", "k1", "default", "n2"),
+			newTestObj("v1", "k1", "default", "n3"),
+		},
+		wantPairs: []expectedPair{
+			{
+				id:        "v1>k1>default>n1",
+				hasLeft:   true,
+				hasRight:  false,
+				isMissing: false,
+			},
+			{
+				id:        "v1>k1>default>n2",
+				hasLeft:   true,
+				hasRight:  true,
+				isMissing: false,
+			},
+			{
+				id:        "v1>k1>default>n3",
+				hasLeft:   false,
+				hasRight:  true,
+				isMissing: false,
+			},
+		},
+	}
+
+	t.Run(tc.title, func(t *testing.T) {
+		verifyObjectPairs(t, sep, tc.leftObjs, tc.rightObjs, tc.wantPairs)
 	})
-
-	t.Run("pairs", func(t *testing.T) {
-		var (
-			left1 = &internal.Object{
-				Header: internal.ObjectHeader{
-					APIVersion: "v1",
-					Kind:       "k1",
-					Metadata: internal.ObjectMeta{
-						Namespace: "default",
-						Name:      "n1",
-					},
-				},
-			}
-			right1 = &internal.Object{
-				Header: internal.ObjectHeader{
-					APIVersion: "v1",
-					Kind:       "k1",
-					Metadata: internal.ObjectMeta{
-						Namespace: "default",
-						Name:      "n3",
-					},
-				},
-			}
-			common1 = &internal.Object{
-				Header: internal.ObjectHeader{
-					APIVersion: "v1",
-					Kind:       "k1",
-					Metadata: internal.ObjectMeta{
-						Namespace: "default",
-						Name:      "n2",
-					},
-				},
-			}
-		)
-
-		const (
-			left1id   = "v1>k1>default>n1"
-			right1id  = "v1>k1>default>n3"
-			common1id = "v1>k1>default>n2"
-		)
-
-		left := internal.NewObjectMap(sep)
-		right := internal.NewObjectMap(sep)
-
-		left.Add(left1)
-		right.Add(right1)
-		left.Add(common1)
-		right.Add(common1)
-
-		m := internal.NewObjectPairMap(left, right)
-		got := m.ObjectPairs()
-		if !assert.Len(t, got, 3) {
-			return
-		}
-		for _, x := range got {
-			if !assert.False(t, x.IsMissing()) {
-				return
-			}
-		}
-
-		p1 := got[0]
-		assert.Equal(t, left1id, p1.ID)
-		assert.Equal(t, left1id, p1.Left.Header.IntoID(sep))
-		assert.Nil(t, p1.Right)
-
-		p2 := got[1]
-		assert.Equal(t, common1id, p2.ID)
-		assert.Equal(t, common1id, p2.Left.Header.IntoID(sep))
-		assert.Equal(t, common1id, p2.Right.Header.IntoID(sep))
-
-		p3 := got[2]
-		assert.Equal(t, right1id, p3.ID)
-		assert.Equal(t, right1id, p3.Right.Header.IntoID(sep))
-		assert.Nil(t, p3.Left)
-	})
-
 }

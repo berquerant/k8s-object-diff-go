@@ -9,12 +9,26 @@ import (
 )
 
 func TestYqFilter(t *testing.T) {
-	t.Run("nil or empty filter returns original body", func(t *testing.T) {
-		f := internal.NewYqFilter(nil)
-		got, err := f.FilterBody("apiVersion: v1\n")
-		require.NoError(t, err)
-		assert.Equal(t, "apiVersion: v1\n", got)
-	})
+	for _, tc := range []struct {
+		title string
+		exprs []string
+	}{
+		{
+			title: "nil expressions",
+			exprs: nil,
+		},
+		{
+			title: "empty expressions",
+			exprs: []string{},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			f := internal.NewYqFilter(tc.exprs)
+			got, err := f.FilterBody("apiVersion: v1\n")
+			require.NoError(t, err)
+			assert.Equal(t, "apiVersion: v1\n", got)
+		})
+	}
 
 	const inputYAML = `apiVersion: apps/v1
 kind: Deployment
@@ -88,21 +102,104 @@ status:
 		}
 	})
 
-	t.Run("LabelFilter", func(t *testing.T) {
-		f := internal.NewLabelFilter([]string{"buildId"})
-		require.NotNil(t, f)
-		res, err := f.FilterBody(inputYAML)
-		require.NoError(t, err)
-		assert.NotContains(t, res, "buildId")
-		assert.Contains(t, res, "app: nginx")
+	t.Run("LabelAndAnnotationFilters", func(t *testing.T) {
+		for _, tc := range []struct {
+			title       string
+			newFilter   func([]string) *internal.YqFilter
+			keys        []string
+			wantMissing []string
+			wantPresent []string
+		}{
+			{
+				title:       "LabelFilter removes matching label",
+				newFilter:   internal.NewLabelFilter,
+				keys:        []string{"buildId"},
+				wantMissing: []string{"buildId"},
+				wantPresent: []string{"app: nginx"},
+			},
+			{
+				title:       "AnnotationFilter removes matching annotation",
+				newFilter:   internal.NewAnnotationFilter,
+				keys:        []string{"kubectl.kubernetes.io/last-applied-configuration"},
+				wantMissing: []string{"last-applied-configuration"},
+				wantPresent: []string{`note: "important"`},
+			},
+		} {
+			t.Run(tc.title, func(t *testing.T) {
+				f := tc.newFilter(tc.keys)
+				require.NotNil(t, f)
+				res, err := f.FilterBody(inputYAML)
+				require.NoError(t, err)
+				for _, m := range tc.wantMissing {
+					assert.NotContains(t, res, m)
+				}
+				for _, p := range tc.wantPresent {
+					assert.Contains(t, res, p)
+				}
+			})
+		}
 	})
+}
 
-	t.Run("AnnotationFilter", func(t *testing.T) {
-		f := internal.NewAnnotationFilter([]string{"kubectl.kubernetes.io/last-applied-configuration"})
-		require.NotNil(t, f)
-		res, err := f.FilterBody(inputYAML)
-		require.NoError(t, err)
-		assert.NotContains(t, res, "last-applied-configuration")
-		assert.Contains(t, res, "note: \"important\"")
-	})
+func TestYqFilter_SecurityInjectionDefense(t *testing.T) {
+	for _, tc := range []struct {
+		title     string
+		newFilter func([]string) *internal.YqFilter
+		inputs    []string
+	}{
+		{
+			title:     "ignore dangerous load_str in field paths",
+			newFilter: internal.NewFieldFilter,
+			inputs:    []string{`del(.status) | .spec.injected = load_str("/etc/passwd")`},
+		},
+		{
+			title:     "ignore dangerous env in field paths",
+			newFilter: internal.NewFieldFilter,
+			inputs:    []string{`.spec | env(SECRET)`},
+		},
+		{
+			title:     "ignore dangerous env after safe prefix in field paths",
+			newFilter: internal.NewFieldFilter,
+			inputs:    []string{`spec.environment.env(SECRET)`},
+		},
+		{
+			title:     "ignore dangerous system in field paths",
+			newFilter: internal.NewFieldFilter,
+			inputs:    []string{`del(.status) | system("whoami")`},
+		},
+		{
+			title:     "discard malicious injection in label keys",
+			newFilter: internal.NewLabelFilter,
+			inputs:    []string{`\" ) | .injected = "pwned"`},
+		},
+		{
+			title:     "discard malicious injection in annotation keys",
+			newFilter: internal.NewAnnotationFilter,
+			inputs:    []string{`\" ) | .injected = "pwned"`},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			f := tc.newFilter(tc.inputs)
+			assert.Nil(t, f, "all dangerous expressions should be discarded")
+		})
+	}
+
+	for _, tc := range []struct {
+		title string
+		input string
+	}{
+		{
+			title: "allow safe word containing keyword substring environment",
+			input: "spec.environment",
+		},
+		{
+			title: "allow safe word containing keyword substring subsystem_metric",
+			input: "metadata.subsystem_metric",
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			f := internal.NewFieldFilter([]string{tc.input})
+			assert.NotNil(t, f, "safe word should not be discarded")
+		})
+	}
 }

@@ -154,6 +154,54 @@ data:
 			}
 		})
 	}
+
+	for _, tc := range []struct {
+		name      string
+		args      map[string]any
+		wantError bool
+		checkDiff func(t *testing.T, res *mcp.CallToolResult)
+	}{
+		{
+			name: "security: reject unauthorized file path in MCP left/right",
+			args: map[string]any{
+				"left":  "/etc/passwd",
+				"right": manifestRight,
+			},
+			wantError: true,
+		},
+		{
+			name: "security: reject template file reference in MCP",
+			args: map[string]any{
+				"left":     manifestLeft,
+				"right":    manifestRight,
+				"out":      "template",
+				"template": "@/etc/passwd",
+			},
+			wantError: true,
+		},
+		{
+			name: "security: template env function is omitted or non-leaking",
+			args: map[string]any{
+				"left":     manifestLeft,
+				"right":    manifestRight,
+				"out":      "template",
+				"template": `Result: {{ env "PATH" }}`,
+			},
+			wantError: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := clientSession.CallTool(ctx, &mcp.CallToolParams{
+				Name:      "diff_k8s_manifests",
+				Arguments: tc.args,
+			})
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantError, res.IsError)
+			if tc.checkDiff != nil && !res.IsError {
+				tc.checkDiff(t, res)
+			}
+		})
+	}
 }
 
 func TestMCPServerConfigImmutability(t *testing.T) {
