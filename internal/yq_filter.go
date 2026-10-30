@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/mikefarah/yq/v4/pkg/yqlib"
@@ -61,28 +62,10 @@ func NewFieldFilter(fieldPaths []string) *YqFilter {
 	return NewYqFilter(exprs)
 }
 
-var dangerousYqKeywords = []string{
-	"load", "load_str", "load_xml", "load_props",
-	"env", "strenv", "eval", "system",
-}
+var dangerousYqRegex = regexp.MustCompile(`(?i)\b(load_props|load_str|load_xml|load|strenv|env|eval|system)\b`)
 
 func containsDangerousYqKeyword(s string) bool {
-	lower := strings.ToLower(s)
-	for _, kw := range dangerousYqKeywords {
-		if idx := strings.Index(lower, kw); idx >= 0 {
-			beforeOk := idx == 0 || !isIdentChar(lower[idx-1])
-			afterIdx := idx + len(kw)
-			afterOk := afterIdx == len(lower) || !isIdentChar(lower[afterIdx])
-			if beforeOk && afterOk {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func isIdentChar(c byte) bool {
-	return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_'
+	return dangerousYqRegex.MatchString(s)
 }
 
 func isDelExpression(p string) bool {

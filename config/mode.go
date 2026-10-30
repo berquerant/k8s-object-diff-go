@@ -462,6 +462,9 @@ func markdownCodeFence(content string) string {
 	return strings.Repeat("`", fenceLen)
 }
 
+// escapeMarkdownHTML sanitizes strings placed inside HTML elements like <summary> and <code>.
+// It escapes '&' and '<' to prevent HTML element injection while preserving the literal '>'
+// character used as the default Kubernetes Object ID separator.
 func escapeMarkdownHTML(s string) string {
 	s = strings.ReplaceAll(s, "&", "&amp;")
 	s = strings.ReplaceAll(s, "<", "&lt;")

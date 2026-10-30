@@ -139,43 +139,67 @@ status:
 			})
 		}
 	})
+}
 
-	t.Run("SecurityInjectionDefense", func(t *testing.T) {
-		for _, tc := range []struct {
-			title     string
-			newFilter func([]string) *internal.YqFilter
-			inputs    []string
-		}{
-			{
-				title:     "ignore dangerous load_str in field paths",
-				newFilter: internal.NewFieldFilter,
-				inputs:    []string{`del(.status) | .spec.injected = load_str("/etc/passwd")`},
-			},
-			{
-				title:     "ignore dangerous env in field paths",
-				newFilter: internal.NewFieldFilter,
-				inputs:    []string{`.spec | env(SECRET)`},
-			},
-			{
-				title:     "ignore dangerous system in field paths",
-				newFilter: internal.NewFieldFilter,
-				inputs:    []string{`del(.status) | system("whoami")`},
-			},
-			{
-				title:     "discard malicious injection in label keys",
-				newFilter: internal.NewLabelFilter,
-				inputs:    []string{`\" ) | .injected = "pwned"`},
-			},
-			{
-				title:     "discard malicious injection in annotation keys",
-				newFilter: internal.NewAnnotationFilter,
-				inputs:    []string{`\" ) | .injected = "pwned"`},
-			},
-		} {
-			t.Run(tc.title, func(t *testing.T) {
-				f := tc.newFilter(tc.inputs)
-				assert.Nil(t, f, "all dangerous expressions should be discarded")
-			})
-		}
-	})
+func TestYqFilter_SecurityInjectionDefense(t *testing.T) {
+	for _, tc := range []struct {
+		title     string
+		newFilter func([]string) *internal.YqFilter
+		inputs    []string
+	}{
+		{
+			title:     "ignore dangerous load_str in field paths",
+			newFilter: internal.NewFieldFilter,
+			inputs:    []string{`del(.status) | .spec.injected = load_str("/etc/passwd")`},
+		},
+		{
+			title:     "ignore dangerous env in field paths",
+			newFilter: internal.NewFieldFilter,
+			inputs:    []string{`.spec | env(SECRET)`},
+		},
+		{
+			title:     "ignore dangerous env after safe prefix in field paths",
+			newFilter: internal.NewFieldFilter,
+			inputs:    []string{`spec.environment.env(SECRET)`},
+		},
+		{
+			title:     "ignore dangerous system in field paths",
+			newFilter: internal.NewFieldFilter,
+			inputs:    []string{`del(.status) | system("whoami")`},
+		},
+		{
+			title:     "discard malicious injection in label keys",
+			newFilter: internal.NewLabelFilter,
+			inputs:    []string{`\" ) | .injected = "pwned"`},
+		},
+		{
+			title:     "discard malicious injection in annotation keys",
+			newFilter: internal.NewAnnotationFilter,
+			inputs:    []string{`\" ) | .injected = "pwned"`},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			f := tc.newFilter(tc.inputs)
+			assert.Nil(t, f, "all dangerous expressions should be discarded")
+		})
+	}
+
+	for _, tc := range []struct {
+		title string
+		input string
+	}{
+		{
+			title: "allow safe word containing keyword substring environment",
+			input: "spec.environment",
+		},
+		{
+			title: "allow safe word containing keyword substring subsystem_metric",
+			input: "metadata.subsystem_metric",
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			f := internal.NewFieldFilter([]string{tc.input})
+			assert.NotNil(t, f, "safe word should not be discarded")
+		})
+	}
 }
