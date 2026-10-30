@@ -82,20 +82,14 @@ metadata:
 	}
 }
 
-func TestLoadObjectFromMap(t *testing.T) {
+func TestLoadObjectFromMap_Valid(t *testing.T) {
 	marshaler := &mockLoadObjectFromMapkMarshaler{}
 
 	for _, tc := range []struct {
 		title string
 		obj   map[string]any
-		err   bool
 		want  *internal.Object
 	}{
-		{
-			title: "empty",
-			obj:   map[string]any{},
-			err:   true,
-		},
 		{
 			title: "deployment",
 			obj: map[string]any{
@@ -138,6 +132,26 @@ func TestLoadObjectFromMap(t *testing.T) {
 				Body: "mocked",
 			},
 		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			got, err := internal.LoadObjectFromMap(context.TODO(), marshaler, tc.obj)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestLoadObjectFromMap_Invalid(t *testing.T) {
+	marshaler := &mockLoadObjectFromMapkMarshaler{}
+
+	for _, tc := range []struct {
+		title string
+		obj   map[string]any
+	}{
+		{
+			title: "empty",
+			obj:   map[string]any{},
+		},
 		{
 			title: "no apiVersion",
 			obj: map[string]any{
@@ -147,7 +161,6 @@ func TestLoadObjectFromMap(t *testing.T) {
 					"name":      "test",
 				},
 			},
-			err: true,
 		},
 		{
 			title: "no kind",
@@ -158,7 +171,6 @@ func TestLoadObjectFromMap(t *testing.T) {
 					"name":      "test",
 				},
 			},
-			err: true,
 		},
 		{
 			title: "no metadata",
@@ -166,7 +178,6 @@ func TestLoadObjectFromMap(t *testing.T) {
 				"apiVersion": "apps/v1",
 				"kind":       "Deployment",
 			},
-			err: true,
 		},
 		{
 			title: "no name",
@@ -177,19 +188,12 @@ func TestLoadObjectFromMap(t *testing.T) {
 					"namespace": "default",
 				},
 			},
-			err: true,
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			got, err := internal.LoadObjectFromMap(context.TODO(), marshaler, tc.obj)
-			if tc.err {
-				assert.NotNil(t, err)
-				return
-			}
-			if !assert.Nil(t, err) {
-				return
-			}
-			assert.Equal(t, tc.want, got)
+			assert.Error(t, err)
+			assert.Nil(t, got)
 		})
 	}
 }

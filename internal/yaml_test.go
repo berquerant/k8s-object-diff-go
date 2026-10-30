@@ -30,18 +30,18 @@ func (r *repeatByteReader) Read(p []byte) (n int, err error) {
 	return int(toRead), nil
 }
 
-func TestYamlUnmarshaler(t *testing.T) {
-	type Want struct {
-		I int    `yaml:"i"`
-		S string `yaml:"s"`
-	}
+type yamlTestWant struct {
+	I int    `yaml:"i"`
+	S string `yaml:"s"`
+}
 
+func TestYamlUnmarshaler_OptionsAndLimits(t *testing.T) {
 	for _, tc := range []struct {
 		title                 string
 		reader                io.Reader
 		text                  string
 		disallowDuplicateKey bool
-		want                  []Want
+		want                  []yamlTestWant
 		wantErr               bool
 		errContains           string
 	}{
@@ -51,7 +51,7 @@ func TestYamlUnmarshaler(t *testing.T) {
 i: 1
 i: 1
 s: "str"`,
-			want: []Want{
+			want: []yamlTestWant{
 				{
 					I: 1,
 					S: "str",
@@ -73,22 +73,51 @@ s: "str"`,
 			wantErr:     true,
 			errContains: "exceeds maximum allowed size",
 		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			r := tc.reader
+			if r == nil {
+				r = strings.NewReader(tc.text)
+			}
+			allowDuplicateKey := !tc.disallowDuplicateKey
+			got, err := internal.NewYamlUnmarshaler(r, yamlTestWant{}, allowDuplicateKey).Unmarshal(context.TODO())
+			if tc.wantErr {
+				assert.Error(t, err)
+				if tc.errContains != "" {
+					assert.Contains(t, err.Error(), tc.errContains)
+				}
+				return
+			}
+			if !assert.Nil(t, err) {
+				return
+			}
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestYamlUnmarshaler_Documents(t *testing.T) {
+	for _, tc := range []struct {
+		title string
+		text  string
+		want  []yamlTestWant
+	}{
 		{
 			title: "ignore empty",
 			text:  ``,
-			want:  []Want{},
+			want:  []yamlTestWant{},
 		},
 		{
 			title: "ignore empty2",
 			text: `---
 `,
-			want: []Want{},
+			want: []yamlTestWant{},
 		},
 		{
 			title: "ignore comment only",
 			text: `---
 # comment`,
-			want: []Want{},
+			want: []yamlTestWant{},
 		},
 		{
 			title: "ignore empties",
@@ -99,14 +128,14 @@ s: "str"`,
 # comment2
 ---
 ---`,
-			want: []Want{},
+			want: []yamlTestWant{},
 		},
 		{
 			title: "an element",
 			text: `
 i: 1
 s: "str"`,
-			want: []Want{
+			want: []yamlTestWant{
 				{
 					I: 1,
 					S: "str",
@@ -121,7 +150,7 @@ s: "str"
 ---
 i: 2
 s: "str2"`,
-			want: []Want{
+			want: []yamlTestWant{
 				{
 					I: 1,
 					S: "str",
@@ -142,7 +171,7 @@ s: "str"
 ---
 i: 2
 s: "str2"`,
-			want: []Want{
+			want: []yamlTestWant{
 				{
 					I: 1,
 					S: "str",
@@ -155,19 +184,11 @@ s: "str2"`,
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			r := tc.reader
-			if r == nil {
-				r = strings.NewReader(tc.text)
-			}
-			allowDuplicateKey := !tc.disallowDuplicateKey
-			got, err := internal.NewYamlUnmarshaler(r, Want{}, allowDuplicateKey).Unmarshal(context.TODO())
-			if tc.wantErr {
-				assert.Error(t, err)
-				if tc.errContains != "" {
-					assert.Contains(t, err.Error(), tc.errContains)
-				}
-				return
-			}
+			got, err := internal.NewYamlUnmarshaler(
+				strings.NewReader(tc.text),
+				yamlTestWant{},
+				true,
+			).Unmarshal(context.TODO())
 			if !assert.Nil(t, err) {
 				return
 			}

@@ -265,7 +265,83 @@ data:
 	}
 }
 
-func TestTemplateMode(t *testing.T) {
+func TestTemplateMode_OptionsValidation(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "dummy.yml")
+	require.NoError(t, os.WriteFile(file, []byte(""), 0o644))
+
+	for _, tc := range []struct {
+		name        string
+		out         config.OutMode
+		template    string
+		errContains string
+	}{
+		{
+			name:        "template required for template mode",
+			out:         config.OutModeTemplate,
+			errContains: "--template is required for template mode",
+		},
+		{
+			name:        "template not allowed for text mode",
+			out:         config.OutModeText,
+			template:    "test",
+			errContains: "--template is only allowed with template mode",
+		},
+		{
+			name:        "template not allowed for yaml mode",
+			out:         config.OutModeYaml,
+			template:    "test",
+			errContains: "--template is only allowed with template mode",
+		},
+		{
+			name:        "template not allowed for id mode",
+			out:         config.OutModeID,
+			template:    "test",
+			errContains: "--template is only allowed with template mode",
+		},
+		{
+			name:        "template not allowed for idlist mode",
+			out:         config.OutModeIDList,
+			template:    "test",
+			errContains: "--template is only allowed with template mode",
+		},
+		{
+			name:        "template not allowed for markdown mode",
+			out:         config.OutModeMarkdown,
+			template:    "test",
+			errContains: "--template is only allowed with template mode",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := &config.Config{
+				Out:      string(tc.out),
+				Template: tc.template,
+			}
+			var got bytes.Buffer
+			err := c.Run(&got, file, file)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tc.errContains)
+		})
+	}
+}
+
+const defaultReproducedTemplate = `# Objdiff Summary: {{ .Left }} <-> {{ .Right }}
+
+{{ if not .HasDiff -}}
+No changes.
+{{ else -}}
+| **add** | **change** | **destroy** |
+| :---: | :---: | :---: |
+| {{ .Stats.Add }} | {{ .Stats.Change }} | {{ .Stats.Destroy }} |
+{{ range .Diffs }}
+<details>
+<summary><b>{{ .DiffType }}</b> <code>{{ .ID }}</code></summary>
+
+` + "``` diff\n" + `{{ .Diff }}` + "```\n" + `
+</details>
+{{ end -}}
+{{ end }}`
+
+func TestTemplateMode_Render(t *testing.T) {
 	const (
 		manifest1 = `apiVersion: v1
 kind: ConfigMap
@@ -290,23 +366,6 @@ data:
 	tmplFile := filepath.Join(dir, "template.tmpl")
 	require.NoError(t, os.WriteFile(tmplFile, []byte("FILE: {{ .Stats.Change }} changes"), 0o644))
 
-	const defaultReproducedTemplate = `# Objdiff Summary: {{ .Left }} <-> {{ .Right }}
-
-{{ if not .HasDiff -}}
-No changes.
-{{ else -}}
-| **add** | **change** | **destroy** |
-| :---: | :---: | :---: |
-| {{ .Stats.Add }} | {{ .Stats.Change }} | {{ .Stats.Destroy }} |
-{{ range .Diffs }}
-<details>
-<summary><b>{{ .DiffType }}</b> <code>{{ .ID }}</code></summary>
-
-` + "``` diff\n" + `{{ .Diff }}` + "```\n" + `
-</details>
-{{ end -}}
-{{ end }}`
-
 	var defaultDiffBuf bytes.Buffer
 	assert.ErrorIs(t, (&config.Config{Out: string(config.OutModeMarkdown)}).Run(&defaultDiffBuf, leftFile, rightFile), config.ErrDiffFound)
 
@@ -315,61 +374,11 @@ No changes.
 
 	for _, tc := range []struct {
 		name        string
-		out         config.OutMode
 		left, right string
 		template    string
 		wantErr     error
-		errContains string
 		want        string
-		wantExact   bool
 	}{
-		{
-			name:        "template required for template mode",
-			out:         config.OutModeTemplate,
-			left:        leftFile,
-			right:       rightFile,
-			errContains: "--template is required for template mode",
-		},
-		{
-			name:        "template not allowed for text mode",
-			out:         config.OutModeText,
-			left:        leftFile,
-			right:       rightFile,
-			template:    "test",
-			errContains: "--template is only allowed with template mode",
-		},
-		{
-			name:        "template not allowed for yaml mode",
-			out:         config.OutModeYaml,
-			left:        leftFile,
-			right:       rightFile,
-			template:    "test",
-			errContains: "--template is only allowed with template mode",
-		},
-		{
-			name:        "template not allowed for id mode",
-			out:         config.OutModeID,
-			left:        leftFile,
-			right:       rightFile,
-			template:    "test",
-			errContains: "--template is only allowed with template mode",
-		},
-		{
-			name:        "template not allowed for idlist mode",
-			out:         config.OutModeIDList,
-			left:        leftFile,
-			right:       rightFile,
-			template:    "test",
-			errContains: "--template is only allowed with template mode",
-		},
-		{
-			name:        "template not allowed for markdown mode",
-			out:         config.OutModeMarkdown,
-			left:        leftFile,
-			right:       rightFile,
-			template:    "test",
-			errContains: "--template is only allowed with template mode",
-		},
 		{
 			name:      "reproduce default markdown output on diff",
 			left:      leftFile,
@@ -377,7 +386,6 @@ No changes.
 			template:  defaultReproducedTemplate,
 			wantErr:   config.ErrDiffFound,
 			want:      defaultDiffBuf.String(),
-			wantExact: true,
 		},
 		{
 			name:      "reproduce default markdown output on nodiff",
@@ -386,7 +394,6 @@ No changes.
 			template:  defaultReproducedTemplate,
 			wantErr:   nil,
 			want:      defaultNoDiffBuf.String(),
-			wantExact: true,
 		},
 		{
 			name:      "read template from file with @",
@@ -395,7 +402,6 @@ No changes.
 			template:  "@" + tmplFile,
 			wantErr:   config.ErrDiffFound,
 			want:      "FILE: 1 changes",
-			wantExact: true,
 		},
 		{
 			name:      "escape @ with @@",
@@ -404,7 +410,6 @@ No changes.
 			template:  "@@at-sign: {{ .Stats.Change }}",
 			wantErr:   config.ErrDiffFound,
 			want:      "@at-sign: 1",
-			wantExact: true,
 		},
 		{
 			name:      "sprig functions available",
@@ -413,57 +418,59 @@ No changes.
 			template:  `{{ upper "hello" }} | {{ repeat 3 "!" }} | {{ add .Stats.Change 10 }}`,
 			wantErr:   config.ErrDiffFound,
 			want:      "HELLO | !!! | 11",
-			wantExact: true,
-		},
-		{
-			name:        "error empty file path after @",
-			left:        leftFile,
-			right:       rightFile,
-			template:    "@",
-			errContains: "empty template file path",
-		},
-		{
-			name:        "error reading nonexistent file",
-			left:        leftFile,
-			right:       rightFile,
-			template:    "@" + filepath.Join(dir, "nonexistent.tmpl"),
-			errContains: "failed to read template file",
-		},
-		{
-			name:        "error invalid template syntax",
-			left:        leftFile,
-			right:       rightFile,
-			template:    "{{ .Unclosed",
-			errContains: "failed to parse template",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			var c config.Config
-			if tc.out == "" {
-				c.Out = string(config.OutModeTemplate)
-			} else {
-				c.Out = string(tc.out)
+			c := &config.Config{
+				Out:      string(config.OutModeTemplate),
+				Template: tc.template,
 			}
-			c.Template = tc.template
-
 			var got bytes.Buffer
 			err := c.Run(&got, tc.left, tc.right)
-
-			if tc.errContains != "" {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tc.errContains)
-				return
-			}
-
 			if tc.wantErr != nil {
 				assert.ErrorIs(t, err, tc.wantErr)
 			} else {
 				assert.NoError(t, err)
 			}
+			assert.Equal(t, tc.want, got.String())
+		})
+	}
+}
 
-			if tc.wantExact {
-				assert.Equal(t, tc.want, got.String())
+func TestTemplateMode_Errors(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "dummy.yml")
+	require.NoError(t, os.WriteFile(file, []byte(""), 0o644))
+
+	for _, tc := range []struct {
+		name        string
+		template    string
+		errContains string
+	}{
+		{
+			name:        "error empty file path after @",
+			template:    "@",
+			errContains: "empty template file path",
+		},
+		{
+			name:        "error reading nonexistent file",
+			template:    "@/nonexistent/path/template.tmpl",
+			errContains: "failed to read template file",
+		},
+		{
+			name:        "error invalid template syntax",
+			template:    "{{ .Unclosed",
+			errContains: "failed to parse template",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := &config.Config{
+				Out:      string(config.OutModeTemplate),
+				Template: tc.template,
 			}
+			var got bytes.Buffer
+			err := c.Run(&got, file, file)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tc.errContains)
 		})
 	}
 }

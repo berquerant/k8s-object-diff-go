@@ -8,29 +8,62 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestObjectPair(t *testing.T) {
-	const sep = ">"
+type expectedPair struct {
+	id        string
+	hasLeft   bool
+	hasRight  bool
+	isMissing bool
+}
 
-	newObj := func(apiVersion, kind, namespace, name string) *internal.Object {
-		return &internal.Object{
-			Header: internal.ObjectHeader{
-				APIVersion: apiVersion,
-				Kind:       kind,
-				Metadata: internal.ObjectMeta{
-					Namespace: namespace,
-					Name:      name,
-				},
+func newTestObj(apiVersion, kind, namespace, name string) *internal.Object {
+	return &internal.Object{
+		Header: internal.ObjectHeader{
+			APIVersion: apiVersion,
+			Kind:       kind,
+			Metadata: internal.ObjectMeta{
+				Namespace: namespace,
+				Name:      name,
 			},
+		},
+	}
+}
+
+func verifyObjectPairs(t *testing.T, sep string, leftObjs, rightObjs []*internal.Object, wantPairs []expectedPair) {
+	t.Helper()
+	leftMap := internal.NewObjectMap(sep)
+	for _, obj := range leftObjs {
+		leftMap.Add(obj)
+	}
+	rightMap := internal.NewObjectMap(sep)
+	for _, obj := range rightObjs {
+		rightMap.Add(obj)
+	}
+
+	pairMap := internal.NewObjectPairMap(leftMap, rightMap)
+	got := pairMap.ObjectPairs()
+	require.Len(t, got, len(wantPairs))
+
+	for i, want := range wantPairs {
+		pair := got[i]
+		assert.Equal(t, want.id, pair.ID)
+		assert.Equal(t, want.isMissing, pair.IsMissing())
+		if want.hasLeft {
+			assert.NotNil(t, pair.Left)
+			assert.Equal(t, want.id, pair.Left.Header.IntoID(sep))
+		} else {
+			assert.Nil(t, pair.Left)
+		}
+		if want.hasRight {
+			assert.NotNil(t, pair.Right)
+			assert.Equal(t, want.id, pair.Right.Header.IntoID(sep))
+		} else {
+			assert.Nil(t, pair.Right)
 		}
 	}
+}
 
-	type expectedPair struct {
-		id        string
-		hasLeft   bool
-		hasRight  bool
-		isMissing bool
-	}
-
+func TestObjectPair_SingleSide(t *testing.T) {
+	const sep = ">"
 	for _, tc := range []struct {
 		title     string
 		leftObjs  []*internal.Object
@@ -46,7 +79,7 @@ func TestObjectPair(t *testing.T) {
 		{
 			title: "left only produces destroy pair",
 			leftObjs: []*internal.Object{
-				newObj("v1", "Pod", "default", "p1"),
+				newTestObj("v1", "Pod", "default", "p1"),
 			},
 			rightObjs: nil,
 			wantPairs: []expectedPair{
@@ -62,7 +95,7 @@ func TestObjectPair(t *testing.T) {
 			title:    "right only produces add pair",
 			leftObjs: nil,
 			rightObjs: []*internal.Object{
-				newObj("v1", "Pod", "default", "p2"),
+				newTestObj("v1", "Pod", "default", "p2"),
 			},
 			wantPairs: []expectedPair{
 				{
@@ -73,69 +106,53 @@ func TestObjectPair(t *testing.T) {
 				},
 			},
 		},
-		{
-			title: "mixed pairs sorted by object ID",
-			leftObjs: []*internal.Object{
-				newObj("v1", "k1", "default", "n1"),
-				newObj("v1", "k1", "default", "n2"),
-			},
-			rightObjs: []*internal.Object{
-				newObj("v1", "k1", "default", "n2"),
-				newObj("v1", "k1", "default", "n3"),
-			},
-			wantPairs: []expectedPair{
-				{
-					id:        "v1>k1>default>n1",
-					hasLeft:   true,
-					hasRight:  false,
-					isMissing: false,
-				},
-				{
-					id:        "v1>k1>default>n2",
-					hasLeft:   true,
-					hasRight:  true,
-					isMissing: false,
-				},
-				{
-					id:        "v1>k1>default>n3",
-					hasLeft:   false,
-					hasRight:  true,
-					isMissing: false,
-				},
-			},
-		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			leftMap := internal.NewObjectMap(sep)
-			for _, obj := range tc.leftObjs {
-				leftMap.Add(obj)
-			}
-			rightMap := internal.NewObjectMap(sep)
-			for _, obj := range tc.rightObjs {
-				rightMap.Add(obj)
-			}
-
-			pairMap := internal.NewObjectPairMap(leftMap, rightMap)
-			got := pairMap.ObjectPairs()
-			require.Len(t, got, len(tc.wantPairs))
-
-			for i, want := range tc.wantPairs {
-				pair := got[i]
-				assert.Equal(t, want.id, pair.ID)
-				assert.Equal(t, want.isMissing, pair.IsMissing())
-				if want.hasLeft {
-					assert.NotNil(t, pair.Left)
-					assert.Equal(t, want.id, pair.Left.Header.IntoID(sep))
-				} else {
-					assert.Nil(t, pair.Left)
-				}
-				if want.hasRight {
-					assert.NotNil(t, pair.Right)
-					assert.Equal(t, want.id, pair.Right.Header.IntoID(sep))
-				} else {
-					assert.Nil(t, pair.Right)
-				}
-			}
+			verifyObjectPairs(t, sep, tc.leftObjs, tc.rightObjs, tc.wantPairs)
 		})
 	}
+}
+
+func TestObjectPair_Mixed(t *testing.T) {
+	const sep = ">"
+	tc := struct {
+		title     string
+		leftObjs  []*internal.Object
+		rightObjs []*internal.Object
+		wantPairs []expectedPair
+	}{
+		title: "mixed pairs sorted by object ID",
+		leftObjs: []*internal.Object{
+			newTestObj("v1", "k1", "default", "n1"),
+			newTestObj("v1", "k1", "default", "n2"),
+		},
+		rightObjs: []*internal.Object{
+			newTestObj("v1", "k1", "default", "n2"),
+			newTestObj("v1", "k1", "default", "n3"),
+		},
+		wantPairs: []expectedPair{
+			{
+				id:        "v1>k1>default>n1",
+				hasLeft:   true,
+				hasRight:  false,
+				isMissing: false,
+			},
+			{
+				id:        "v1>k1>default>n2",
+				hasLeft:   true,
+				hasRight:  true,
+				isMissing: false,
+			},
+			{
+				id:        "v1>k1>default>n3",
+				hasLeft:   false,
+				hasRight:  true,
+				isMissing: false,
+			},
+		},
+	}
+
+	t.Run(tc.title, func(t *testing.T) {
+		verifyObjectPairs(t, sep, tc.leftObjs, tc.rightObjs, tc.wantPairs)
+	})
 }
