@@ -105,4 +105,23 @@ status:
 		assert.NotContains(t, res, "last-applied-configuration")
 		assert.Contains(t, res, "note: \"important\"")
 	})
+
+	t.Run("SecurityInjectionDefense", func(t *testing.T) {
+		t.Run("ignore dangerous functions in field paths", func(t *testing.T) {
+			dangerous := []string{
+				`del(.status) | .spec.injected = load_str("/etc/passwd")`,
+				`.spec | env(SECRET)`,
+				`del(.status) | system("whoami")`,
+			}
+			f := internal.NewFieldFilter(dangerous)
+			assert.Nil(t, f) // All dangerous expressions were discarded
+		})
+
+		t.Run("discard malicious injection in label keys", func(t *testing.T) {
+			// Malicious key crafted to break out of double-quote enclosure
+			maliciousKey := `\" ) | .injected = "pwned"`
+			f := internal.NewLabelFilter([]string{maliciousKey})
+			assert.Nil(t, f)
+		})
+	})
 }

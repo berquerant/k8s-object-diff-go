@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -29,6 +30,7 @@ type diffPrinter struct {
 	markdownHeadingLevel uint
 	markdownTitle        string
 	template             string
+	allowTemplateFile    bool
 }
 
 func (p *diffPrinter) print(ctx context.Context) error {
@@ -287,15 +289,26 @@ func (p *diffPrinter) renderMarkdownTitle() (string, error) {
 	return buf.String(), nil
 }
 
-func resolveTemplate(input string) (string, error) {
+func safeSprigFuncMap() template.FuncMap {
+	funcs := sprig.HermeticTxtFuncMap()
+	delete(funcs, "env")
+	delete(funcs, "expandenv")
+	return funcs
+}
+
+func resolveTemplate(input string, allowFile bool) (string, error) {
 	if strings.HasPrefix(input, "@@") {
 		return input[1:], nil
 	}
 	if strings.HasPrefix(input, "@") {
+		if !allowFile {
+			return "", errors.New("template file reference (@...) is not allowed")
+		}
 		filePath := input[1:]
 		if filePath == "" {
 			return "", errors.New("empty template file path")
 		}
+		filePath = filepath.Clean(filePath)
 		b, err := os.ReadFile(filePath)
 		if err != nil {
 			return "", fmt.Errorf("failed to read template file %q: %w", filePath, err)
@@ -306,12 +319,12 @@ func resolveTemplate(input string) (string, error) {
 }
 
 func (p *diffPrinter) printTemplateDiff(ctx context.Context) error {
-	tmplContent, err := resolveTemplate(p.template)
+	tmplContent, err := resolveTemplate(p.template, p.allowTemplateFile)
 	if err != nil {
 		return err
 	}
 
-	tmpl, err := template.New("template").Funcs(sprig.TxtFuncMap()).Parse(tmplContent)
+	tmpl, err := template.New("template").Funcs(safeSprigFuncMap()).Parse(tmplContent)
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
@@ -407,9 +420,9 @@ No changes.`,
 	items := make([]Item, 0, len(diffs))
 	for _, d := range diffs {
 		items = append(items, Item{
-			ID:       d.Pair.ID,
+			ID:       escapeMarkdownHTML(d.Pair.ID),
 			Diff:     d.Diff,
-			DiffType: d.Type.String(),
+			DiffType: escapeMarkdownHTML(d.Type.String()),
 			Fence:    markdownCodeFence(d.Diff),
 		})
 	}
@@ -447,4 +460,10 @@ func markdownCodeFence(content string) string {
 	}
 	fenceLen := max(3, maxRun+1)
 	return strings.Repeat("`", fenceLen)
+}
+
+func escapeMarkdownHTML(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	return s
 }

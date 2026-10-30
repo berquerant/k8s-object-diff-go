@@ -1,6 +1,7 @@
 package internal_test
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"os"
@@ -512,4 +513,16 @@ line3
 			assert.Equal(t, tc.want, got, "%s:\nWANT\n%s\nGOT\n%s", tc.title, wantJSON, gotJSON)
 		})
 	}
+}
+
+func TestDMPDiffContextCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	dmp := &internal.DMP{
+		LeftLabel:  "left",
+		RightLabel: "right",
+		Context:    3,
+	}
+	_, err := dmp.DiffContext(ctx, "left text", "right text")
+	assert.ErrorIs(t, err, context.Canceled)
 }

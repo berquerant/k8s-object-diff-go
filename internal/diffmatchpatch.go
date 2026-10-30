@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -212,7 +213,17 @@ type DMP struct {
 var ErrDMPNoDiff = errors.New("DMPNoDiff")
 
 func (p *DMP) Diff(left, right string) (*DMPResult, error) {
+	return p.DiffContext(context.Background(), left, right)
+}
+
+func (p *DMP) DiffContext(ctx context.Context, left, right string) (*DMPResult, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	diffs := p.rawDiff(left, right)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	switch len(diffs) {
 	case 0:
 		return nil, ErrDMPNoDiff
@@ -228,9 +239,15 @@ func (p *DMP) Diff(left, right string) (*DMPResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	slog.Debug("diff: rawPatches", slog.Int("len", len(patches)), slog.String("debug", patchesToDebugString(patches)))
 
 	if patches, err = p.mergePatches(patches); err != nil {
+		return nil, err
+	}
+	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	slog.Debug("diff: mergePatches", slog.Int("len", len(patches)), slog.String("debug", patchesToDebugString(patches)))

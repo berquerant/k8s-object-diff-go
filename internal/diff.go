@@ -138,7 +138,7 @@ func (*DMPDiffer) Diff(ctx context.Context, req *DiffRequest) (*DiffResponse, er
 		RightLabel: req.RightLabel,
 		Context:    req.Context,
 	}
-	diff, err := dmp.Diff(req.Left, req.Right)
+	diff, err := dmp.DiffContext(ctx, req.Left, req.Right)
 	if err != nil {
 		if errors.Is(err, ErrDMPNoDiff) {
 			return &DiffResponse{}, nil

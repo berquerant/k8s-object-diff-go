@@ -2,12 +2,33 @@ package internal_test
 
 import (
 	"context"
+	"io"
 	"strings"
 	"testing"
 
 	"github.com/berquerant/k8s-object-diff-go/internal"
 	"github.com/stretchr/testify/assert"
 )
+
+type repeatByteReader struct {
+	b         byte
+	remaining int64
+}
+
+func (r *repeatByteReader) Read(p []byte) (n int, err error) {
+	if r.remaining <= 0 {
+		return 0, io.EOF
+	}
+	toRead := int64(len(p))
+	if toRead > r.remaining {
+		toRead = r.remaining
+	}
+	for i := int64(0); i < toRead; i++ {
+		p[i] = r.b
+	}
+	r.remaining -= toRead
+	return int(toRead), nil
+}
 
 func TestYamlUnmarshaler(t *testing.T) {
 	type Want struct {
@@ -37,6 +58,13 @@ s: "str"`
 			_, err := internal.NewYamlUnmarshaler(strings.NewReader(text), Want{}, false).Unmarshal(context.TODO())
 			assert.NotNil(t, err)
 		})
+	})
+
+	t.Run("size limit exceeded", func(t *testing.T) {
+		r := &repeatByteReader{b: ' ', remaining: 50*1024*1024 + 10}
+		_, err := internal.NewYamlUnmarshaler(r, Want{}, true).Unmarshal(context.TODO())
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "exceeds maximum allowed size")
 	})
 
 	for _, tc := range []struct {
