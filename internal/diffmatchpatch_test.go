@@ -515,14 +515,58 @@ line3
 	}
 }
 
-func TestDMPDiffContextCancellation(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	dmp := &internal.DMP{
-		LeftLabel:  "left",
-		RightLabel: "right",
-		Context:    3,
+func TestDMPDiffContext(t *testing.T) {
+	for _, tc := range []struct {
+		title     string
+		left      string
+		right     string
+		cancel    bool
+		wantErrIs error
+		checkDiff bool
+	}{
+		{
+			title:     "canceled context returns context.Canceled",
+			left:      "left text\n",
+			right:     "right text\n",
+			cancel:    true,
+			wantErrIs: context.Canceled,
+		},
+		{
+			title:     "active context with differences succeeds",
+			left:      "left text\n",
+			right:     "right text\n",
+			cancel:    false,
+			checkDiff: true,
+		},
+		{
+			title:     "active context with identical inputs returns ErrDMPNoDiff",
+			left:      "same text\n",
+			right:     "same text\n",
+			cancel:    false,
+			wantErrIs: internal.ErrDMPNoDiff,
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			ctx, cancelFunc := context.WithCancel(context.Background())
+			defer cancelFunc()
+			if tc.cancel {
+				cancelFunc()
+			}
+			dmp := &internal.DMP{
+				LeftLabel:  "left",
+				RightLabel: "right",
+				Context:    3,
+			}
+			res, err := dmp.DiffContext(ctx, tc.left, tc.right)
+			if tc.wantErrIs != nil {
+				assert.ErrorIs(t, err, tc.wantErrIs)
+				return
+			}
+			assert.NoError(t, err)
+			if tc.checkDiff {
+				assert.NotNil(t, res)
+				assert.NotEmpty(t, res.Patches)
+			}
+		})
 	}
-	_, err := dmp.DiffContext(ctx, "left text", "right text")
-	assert.ErrorIs(t, err, context.Canceled)
 }

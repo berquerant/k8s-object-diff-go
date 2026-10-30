@@ -92,11 +92,6 @@ func BenchmarkRun(b *testing.B) {
 }
 
 func TestStdinInput(t *testing.T) {
-	t.Run("2 stdins", func(t *testing.T) {
-		var c config.Config
-		assert.ErrorContains(t, c.Run(io.Discard, "-", "-"), "cannot be specified for both left and right")
-	})
-
 	const (
 		manifest1 = `apiVersion: v1
 kind: ConfigMap
@@ -112,23 +107,29 @@ data:
   os: ubuntu`
 	)
 	file := filepath.Join(t.TempDir(), "test.yml")
-	if !assert.Nil(t, os.WriteFile(file, []byte(manifest1), 0644)) {
-		return
-	}
-	newStdin := func() io.Reader {
-		return bytes.NewBufferString(manifest2)
-	}
+	require.NoError(t, os.WriteFile(file, []byte(manifest1), 0o644))
 
 	for _, tc := range []struct {
 		name        string
 		left, right string
-		want        string
+		useStdin    bool
+		wantErrIs   error
+		errContains string
+		wantDiff    string
 	}{
 		{
-			name:  "right stdin",
-			left:  file,
-			right: "-",
-			want: fmt.Sprintf(`--- %s v1>ConfigMap>>test
+			name:        "2 stdins disallowed",
+			left:        "-",
+			right:       "-",
+			errContains: "cannot be specified for both left and right",
+		},
+		{
+			name:      "right stdin",
+			left:      file,
+			right:     "-",
+			useStdin:  true,
+			wantErrIs: config.ErrDiffFound,
+			wantDiff: fmt.Sprintf(`--- %s v1>ConfigMap>>test
 +++ - v1>ConfigMap>>test
 @@ -1,6 +1,6 @@
  apiVersion: v1
@@ -141,10 +142,12 @@ data:
 `, file),
 		},
 		{
-			name:  "left stdin",
-			left:  "-",
-			right: file,
-			want: fmt.Sprintf(`--- - v1>ConfigMap>>test
+			name:      "left stdin",
+			left:      "-",
+			right:     file,
+			useStdin:  true,
+			wantErrIs: config.ErrDiffFound,
+			wantDiff: fmt.Sprintf(`--- - v1>ConfigMap>>test
 +++ %s v1>ConfigMap>>test
 @@ -1,6 +1,6 @@
  apiVersion: v1
@@ -162,10 +165,24 @@ data:
 			c.Separator = ">"
 			c.Indent = 2
 			c.Context = 3
-			c.Stdin = newStdin()
+			if tc.useStdin {
+				c.Stdin = bytes.NewBufferString(manifest2)
+			}
 			var got bytes.Buffer
-			assert.ErrorIs(t, c.Run(&got, tc.left, tc.right), config.ErrDiffFound)
-			assert.Equal(t, tc.want, got.String())
+			err := c.Run(&got, tc.left, tc.right)
+			if tc.errContains != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errContains)
+				return
+			}
+			if tc.wantErrIs != nil {
+				assert.ErrorIs(t, err, tc.wantErrIs)
+			} else {
+				assert.NoError(t, err)
+			}
+			if tc.wantDiff != "" {
+				assert.Equal(t, tc.wantDiff, got.String())
+			}
 		})
 	}
 }
@@ -192,45 +209,60 @@ data:
 	require.NoError(t, os.WriteFile(leftFile, []byte(manifest1), 0o644))
 	require.NoError(t, os.WriteFile(rightFile, []byte(manifest2), 0o644))
 
-	t.Run("default title", func(t *testing.T) {
-		var c config.Config
-		c.Out = string(config.OutModeMarkdown)
-		var got bytes.Buffer
-		assert.ErrorIs(t, c.Run(&got, leftFile, rightFile), config.ErrDiffFound)
-		wantTitle := fmt.Sprintf("# Objdiff Summary: %s <-> %s", leftFile, rightFile)
-		assert.Contains(t, got.String(), wantTitle)
-	})
-
-	t.Run("custom title with template variables", func(t *testing.T) {
-		var c config.Config
-		c.Out = string(config.OutModeMarkdown)
-		c.MarkdownTitle = "Comparison of {{ .LEFT_FILE }} and {{ .RIGHT_FILE }}"
-		var got bytes.Buffer
-		assert.ErrorIs(t, c.Run(&got, leftFile, rightFile), config.ErrDiffFound)
-		wantTitle := fmt.Sprintf("# Comparison of %s and %s", leftFile, rightFile)
-		assert.Contains(t, got.String(), wantTitle)
-	})
-
-	t.Run("custom title with labels", func(t *testing.T) {
-		var c config.Config
-		c.Out = string(config.OutModeMarkdown)
-		c.MarkdownTitle = "[{{ .LEFT_FILE }}] vs [{{ .RIGHT_FILE }}]"
-		c.Labels = []string{"prod", "stg"}
-		var got bytes.Buffer
-		assert.ErrorIs(t, c.Run(&got, leftFile, rightFile), config.ErrDiffFound)
-		wantTitle := "# [prod] vs [stg]"
-		assert.Contains(t, got.String(), wantTitle)
-	})
-
-	t.Run("invalid title template", func(t *testing.T) {
-		var c config.Config
-		c.Out = string(config.OutModeMarkdown)
-		c.MarkdownTitle = "{{ .INVALID"
-		var got bytes.Buffer
-		err := c.Run(&got, leftFile, rightFile)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "failed to parse markdown title template")
-	})
+	for _, tc := range []struct {
+		title         string
+		markdownTitle string
+		labels        []string
+		wantTitle     string
+		wantErrIs     error
+		errContains   string
+	}{
+		{
+			title:     "default title",
+			wantTitle: fmt.Sprintf("# Objdiff Summary: %s <-> %s", leftFile, rightFile),
+			wantErrIs: config.ErrDiffFound,
+		},
+		{
+			title:         "custom title with template variables",
+			markdownTitle: "Comparison of {{ .LEFT_FILE }} and {{ .RIGHT_FILE }}",
+			wantTitle:     fmt.Sprintf("# Comparison of %s and %s", leftFile, rightFile),
+			wantErrIs:     config.ErrDiffFound,
+		},
+		{
+			title:         "custom title with labels",
+			markdownTitle: "[{{ .LEFT_FILE }}] vs [{{ .RIGHT_FILE }}]",
+			labels:        []string{"prod", "stg"},
+			wantTitle:     "# [prod] vs [stg]",
+			wantErrIs:     config.ErrDiffFound,
+		},
+		{
+			title:         "invalid title template",
+			markdownTitle: "{{ .INVALID",
+			errContains:   "failed to parse markdown title template",
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			var c config.Config
+			c.Out = string(config.OutModeMarkdown)
+			c.MarkdownTitle = tc.markdownTitle
+			c.Labels = tc.labels
+			var got bytes.Buffer
+			err := c.Run(&got, leftFile, rightFile)
+			if tc.errContains != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errContains)
+				return
+			}
+			if tc.wantErrIs != nil {
+				assert.ErrorIs(t, err, tc.wantErrIs)
+			} else {
+				assert.NoError(t, err)
+			}
+			if tc.wantTitle != "" {
+				assert.Contains(t, got.String(), tc.wantTitle)
+			}
+		})
+	}
 }
 
 func TestTemplateMode(t *testing.T) {
@@ -281,35 +313,9 @@ No changes.
 	var defaultNoDiffBuf bytes.Buffer
 	assert.NoError(t, (&config.Config{Out: string(config.OutModeMarkdown)}).Run(&defaultNoDiffBuf, leftFile, leftFile))
 
-	t.Run("template required for template mode", func(t *testing.T) {
-		var c config.Config
-		c.Out = string(config.OutModeTemplate)
-		var got bytes.Buffer
-		err := c.Run(&got, leftFile, rightFile)
-		assert.Error(t, err)
-		assert.Equal(t, "--template is required for template mode", err.Error())
-	})
-
-	for _, mode := range []config.OutMode{
-		config.OutModeText,
-		config.OutModeYaml,
-		config.OutModeID,
-		config.OutModeIDList,
-		config.OutModeMarkdown,
-	} {
-		t.Run(fmt.Sprintf("template not allowed for %s mode", mode), func(t *testing.T) {
-			var c config.Config
-			c.Out = string(mode)
-			c.Template = "test"
-			var got bytes.Buffer
-			err := c.Run(&got, leftFile, rightFile)
-			assert.Error(t, err)
-			assert.Equal(t, "--template is only allowed with template mode", err.Error())
-		})
-	}
-
 	for _, tc := range []struct {
 		name        string
+		out         config.OutMode
 		left, right string
 		template    string
 		wantErr     error
@@ -317,6 +323,53 @@ No changes.
 		want        string
 		wantExact   bool
 	}{
+		{
+			name:        "template required for template mode",
+			out:         config.OutModeTemplate,
+			left:        leftFile,
+			right:       rightFile,
+			errContains: "--template is required for template mode",
+		},
+		{
+			name:        "template not allowed for text mode",
+			out:         config.OutModeText,
+			left:        leftFile,
+			right:       rightFile,
+			template:    "test",
+			errContains: "--template is only allowed with template mode",
+		},
+		{
+			name:        "template not allowed for yaml mode",
+			out:         config.OutModeYaml,
+			left:        leftFile,
+			right:       rightFile,
+			template:    "test",
+			errContains: "--template is only allowed with template mode",
+		},
+		{
+			name:        "template not allowed for id mode",
+			out:         config.OutModeID,
+			left:        leftFile,
+			right:       rightFile,
+			template:    "test",
+			errContains: "--template is only allowed with template mode",
+		},
+		{
+			name:        "template not allowed for idlist mode",
+			out:         config.OutModeIDList,
+			left:        leftFile,
+			right:       rightFile,
+			template:    "test",
+			errContains: "--template is only allowed with template mode",
+		},
+		{
+			name:        "template not allowed for markdown mode",
+			out:         config.OutModeMarkdown,
+			left:        leftFile,
+			right:       rightFile,
+			template:    "test",
+			errContains: "--template is only allowed with template mode",
+		},
 		{
 			name:      "reproduce default markdown output on diff",
 			left:      leftFile,
@@ -386,7 +439,11 @@ No changes.
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var c config.Config
-			c.Out = string(config.OutModeTemplate)
+			if tc.out == "" {
+				c.Out = string(config.OutModeTemplate)
+			} else {
+				c.Out = string(tc.out)
+			}
 			c.Template = tc.template
 
 			var got bytes.Buffer

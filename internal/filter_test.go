@@ -8,24 +8,59 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNewLineFilter(t *testing.T) {
+	for _, tc := range []struct {
+		title    string
+		patterns []string
+		wantErr  bool
+	}{
+		{
+			title:    "valid patterns",
+			patterns: []string{"^foo", "bar$"},
+			wantErr:  false,
+		},
+		{
+			title:    "nil patterns",
+			patterns: nil,
+			wantErr:  false,
+		},
+		{
+			title:    "empty patterns",
+			patterns: []string{},
+			wantErr:  false,
+		},
+		{
+			title:    "invalid regex pattern",
+			patterns: []string{"["},
+			wantErr:  true,
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			f, err := internal.NewLineFilter(tc.patterns)
+			if tc.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, f)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, f)
+			}
+		})
+	}
+}
+
 func TestLineFilter(t *testing.T) {
-	t.Run("NewLineFilter invalid pattern", func(t *testing.T) {
-		_, err := internal.NewLineFilter([]string{"["})
-		assert.Error(t, err)
-	})
-
-	t.Run("no patterns returns unchanged", func(t *testing.T) {
-		f, err := internal.NewLineFilter(nil)
-		require.NoError(t, err)
-		assert.Equal(t, "a\nb\n", f.Filter("a\nb\n"))
-	})
-
 	for _, tc := range []struct {
 		title    string
 		patterns []string
 		input    string
 		want     string
 	}{
+		{
+			title:    "no patterns returns unchanged",
+			patterns: nil,
+			input:    "a\nb\n",
+			want:     "a\nb\n",
+		},
 		{
 			title:    "remove matching lines",
 			patterns: []string{"foo"},

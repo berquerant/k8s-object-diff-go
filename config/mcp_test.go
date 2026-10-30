@@ -155,50 +155,53 @@ data:
 		})
 	}
 
-	t.Run("security: reject unauthorized file path in MCP left/right", func(t *testing.T) {
-		res, err := clientSession.CallTool(ctx, &mcp.CallToolParams{
-			Name: "diff_k8s_manifests",
-			Arguments: map[string]any{
+	for _, tc := range []struct {
+		name      string
+		args      map[string]any
+		wantError bool
+		checkDiff func(t *testing.T, res *mcp.CallToolResult)
+	}{
+		{
+			name: "security: reject unauthorized file path in MCP left/right",
+			args: map[string]any{
 				"left":  "/etc/passwd",
 				"right": manifestRight,
 			},
-		})
-		require.NoError(t, err)
-		assert.True(t, res.IsError)
-	})
-
-	t.Run("security: reject template file reference in MCP", func(t *testing.T) {
-		res, err := clientSession.CallTool(ctx, &mcp.CallToolParams{
-			Name: "diff_k8s_manifests",
-			Arguments: map[string]any{
+			wantError: true,
+		},
+		{
+			name: "security: reject template file reference in MCP",
+			args: map[string]any{
 				"left":     manifestLeft,
 				"right":    manifestRight,
 				"out":      "template",
 				"template": "@/etc/passwd",
 			},
-		})
-		require.NoError(t, err)
-		assert.True(t, res.IsError)
-	})
-
-	t.Run("security: template env function is omitted or non-leaking", func(t *testing.T) {
-		res, err := clientSession.CallTool(ctx, &mcp.CallToolParams{
-			Name: "diff_k8s_manifests",
-			Arguments: map[string]any{
+			wantError: true,
+		},
+		{
+			name: "security: template env function is omitted or non-leaking",
+			args: map[string]any{
 				"left":     manifestLeft,
 				"right":    manifestRight,
 				"out":      "template",
 				"template": `Result: {{ env "PATH" }}`,
 			},
-		})
-		require.NoError(t, err)
-		// Because env is not in the Hermetic template func map, it should either error or return empty
-		if !res.IsError {
-			toolResult, err := parseResult(res)
+			wantError: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := clientSession.CallTool(ctx, &mcp.CallToolParams{
+				Name:      "diff_k8s_manifests",
+				Arguments: tc.args,
+			})
 			require.NoError(t, err)
-			assert.NotContains(t, toolResult.Diff, "/usr/bin")
-		}
-	})
+			assert.Equal(t, tc.wantError, res.IsError)
+			if tc.checkDiff != nil && !res.IsError {
+				tc.checkDiff(t, res)
+			}
+		})
+	}
 }
 
 func TestMCPServerConfigImmutability(t *testing.T) {

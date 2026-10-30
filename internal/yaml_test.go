@@ -36,42 +36,43 @@ func TestYamlUnmarshaler(t *testing.T) {
 		S string `yaml:"s"`
 	}
 
-	t.Run("allowDuplicateMapKey", func(t *testing.T) {
-		const text = `---
-i: 1
-i: 1
-s: "str"`
-		t.Run("true", func(t *testing.T) {
-			got, err := internal.NewYamlUnmarshaler(strings.NewReader(text), Want{}, true).Unmarshal(context.TODO())
-			if !assert.Nil(t, err) {
-				return
-			}
-			if !assert.Len(t, got, 1) {
-				return
-			}
-			assert.Equal(t, Want{
-				I: 1,
-				S: "str",
-			}, got[0])
-		})
-		t.Run("false", func(t *testing.T) {
-			_, err := internal.NewYamlUnmarshaler(strings.NewReader(text), Want{}, false).Unmarshal(context.TODO())
-			assert.NotNil(t, err)
-		})
-	})
-
-	t.Run("size limit exceeded", func(t *testing.T) {
-		r := &repeatByteReader{b: ' ', remaining: 50*1024*1024 + 10}
-		_, err := internal.NewYamlUnmarshaler(r, Want{}, true).Unmarshal(context.TODO())
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "exceeds maximum allowed size")
-	})
-
 	for _, tc := range []struct {
-		title string
-		text  string
-		want  []Want
+		title                 string
+		reader                io.Reader
+		text                  string
+		disallowDuplicateKey bool
+		want                  []Want
+		wantErr               bool
+		errContains           string
 	}{
+		{
+			title: "allowDuplicateMapKey true",
+			text: `---
+i: 1
+i: 1
+s: "str"`,
+			want: []Want{
+				{
+					I: 1,
+					S: "str",
+				},
+			},
+		},
+		{
+			title: "allowDuplicateMapKey false",
+			text: `---
+i: 1
+i: 1
+s: "str"`,
+			disallowDuplicateKey: true,
+			wantErr:              true,
+		},
+		{
+			title:       "size limit exceeded",
+			reader:      &repeatByteReader{b: ' ', remaining: 50*1024*1024 + 10},
+			wantErr:     true,
+			errContains: "exceeds maximum allowed size",
+		},
 		{
 			title: "ignore empty",
 			text:  ``,
@@ -154,11 +155,19 @@ s: "str2"`,
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			got, err := internal.NewYamlUnmarshaler(
-				strings.NewReader(tc.text),
-				Want{},
-				true,
-			).Unmarshal(context.TODO())
+			r := tc.reader
+			if r == nil {
+				r = strings.NewReader(tc.text)
+			}
+			allowDuplicateKey := !tc.disallowDuplicateKey
+			got, err := internal.NewYamlUnmarshaler(r, Want{}, allowDuplicateKey).Unmarshal(context.TODO())
+			if tc.wantErr {
+				assert.Error(t, err)
+				if tc.errContains != "" {
+					assert.Contains(t, err.Error(), tc.errContains)
+				}
+				return
+			}
 			if !assert.Nil(t, err) {
 				return
 			}

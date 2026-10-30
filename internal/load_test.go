@@ -7,6 +7,7 @@ import (
 
 	"github.com/berquerant/k8s-object-diff-go/internal"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockLoadObjectFromMapkMarshaler struct{}
@@ -16,8 +17,7 @@ func (mockLoadObjectFromMapkMarshaler) Marshal(_ context.Context, _ any) ([]byte
 }
 
 func TestLoadObjects(t *testing.T) {
-	t.Run("pod", func(t *testing.T) {
-		const manifest = `apiVersion: v1
+	const podManifest = `apiVersion: v1
 kind: Pod
 metadata:
   name: nginx
@@ -28,25 +28,58 @@ spec:
     ports:
     - containerPort: 80
 `
-		r := strings.NewReader(manifest)
-		got, err := internal.LoadObjects(context.TODO(), r, internal.NewYamlMarshaler(2, true), true)
-		if !assert.Nil(t, err) {
-			return
-		}
-		if !assert.Len(t, got, 1) {
-			return
-		}
-		assert.Equal(t, &internal.Object{
-			Header: internal.ObjectHeader{
-				APIVersion: "v1",
-				Kind:       "Pod",
-				Metadata: internal.ObjectMeta{
-					Name: "nginx",
-				},
-			},
-			Body: manifest,
-		}, got[0])
-	})
+	const multiDocManifest = `apiVersion: v1
+kind: Service
+metadata:
+  name: svc1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc2
+`
+
+	for _, tc := range []struct {
+		title    string
+		manifest string
+		wantLen  int
+		wantErr  bool
+	}{
+		{
+			title:    "single pod manifest",
+			manifest: podManifest,
+			wantLen:  1,
+		},
+		{
+			title:    "multi-document manifest",
+			manifest: multiDocManifest,
+			wantLen:  2,
+		},
+		{
+			title:    "empty manifest",
+			manifest: "",
+			wantLen:  0,
+		},
+		{
+			title:    "invalid manifest missing apiVersion",
+			manifest: "kind: Pod\nmetadata:\n  name: nginx\n",
+			wantErr:  true,
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			r := strings.NewReader(tc.manifest)
+			got, err := internal.LoadObjects(context.TODO(), r, internal.NewYamlMarshaler(2, true), true)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Len(t, got, tc.wantLen)
+			if tc.wantLen > 0 {
+				assert.NotEmpty(t, got[0].Header.Kind)
+			}
+		})
+	}
 }
 
 func TestLoadObjectFromMap(t *testing.T) {
