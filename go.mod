@@ -12,7 +12,7 @@ tool (
 require (
 	al.essio.dev/pkg/shellescape v1.6.1
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/berquerant/structconfig v0.12.0
+	github.com/berquerant/structconfig v0.13.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/mikefarah/yq/v4 v4.54.1
 	github.com/modelcontextprotocol/go-sdk v1.8.0
