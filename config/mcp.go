@@ -4,10 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
-	"io"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/berquerant/k8s-object-diff-go/version"
@@ -16,8 +12,8 @@ import (
 
 // DiffToolParams defines the input parameters for the diff_k8s_manifests tool.
 type DiffToolParams struct {
-	Left                 string   `json:"left" jsonschema:"left manifest YAML content or file path"`
-	Right                string   `json:"right" jsonschema:"right manifest YAML content or file path"`
+	Left                 string   `json:"left" jsonschema:"left manifest YAML content"`
+	Right                string   `json:"right" jsonschema:"right manifest YAML content"`
 	Out                  string   `json:"out,omitempty" jsonschema:"output format: text, yaml, id, idlist, markdown, template (default: text)"`
 	Context              *int     `json:"context,omitempty" jsonschema:"number of diff context lines (default: 3)"`
 	Separator            string   `json:"separator,omitempty" jsonschema:"object id separator (default: >)"`
@@ -25,7 +21,7 @@ type DiffToolParams struct {
 	Verbose              bool     `json:"verbose,omitempty" jsonschema:"enable verbose output; annotate diff type and display summary"`
 	MarkdownHeadingLevel *uint    `json:"markdownHeadingLevel,omitempty" jsonschema:"highest heading level in markdown (default: 1)"`
 	MarkdownTitle        string   `json:"markdownTitle,omitempty" jsonschema:"title template in markdown format (default: 'Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}')"`
-	Template             string   `json:"template,omitempty" jsonschema:"template string or file path (prefix with '@') for template output mode"`
+	Template             string   `json:"template,omitempty" jsonschema:"template string for template output mode"`
 	IgnoreMatchingLines  []string `json:"ignoreMatchingLines,omitempty" jsonschema:"ignore lines matching regexp"`
 	IgnoreFields         []string `json:"ignoreFields,omitempty" jsonschema:"ignore field by path or yq expression"`
 	IgnoreLabels         []string `json:"ignoreLabels,omitempty" jsonschema:"ignore label by key"`
@@ -80,24 +76,12 @@ func (c *Config) runDiffTool(ctx context.Context, params DiffToolParams) (DiffTo
 
 	cfg.applyOverrides(params)
 
-	leftReader, leftCloser, leftLabel, err := openInput(params.Left, "left")
-	if err != nil {
-		return DiffToolResult{}, fmt.Errorf("open left file: %w", err)
-	}
-	defer leftCloser()
-
-	rightReader, rightCloser, rightLabel, err := openInput(params.Right, "right")
-	if err != nil {
-		return DiffToolResult{}, fmt.Errorf("open right file: %w", err)
-	}
-	defer rightCloser()
-
 	if len(cfg.Labels) == 0 {
-		cfg.Labels = []string{leftLabel, rightLabel}
+		cfg.Labels = []string{"left", "right"}
 	}
 
 	var buf bytes.Buffer
-	err = cfg.runWithReaders(ctx, &buf, leftReader, rightReader)
+	err := cfg.runWithReaders(ctx, &buf, strings.NewReader(params.Left), strings.NewReader(params.Right))
 	hasDiff := false
 	if err != nil {
 		if errors.Is(err, ErrDiffFound) {
@@ -156,51 +140,5 @@ func (cfg *Config) applyOverrides(params DiffToolParams) {
 	if params.IgnoreStatus {
 		cfg.IgnoreStatus = true
 	}
-}
-
-func openInput(pathOrContent, defaultLabel string) (io.Reader, func(), string, error) {
-	if isAllowedManifestFile(pathOrContent) {
-		clean := filepath.Clean(pathOrContent)
-		f, err := os.Open(clean)
-		if err != nil {
-			return nil, nil, "", err
-		}
-		return f, func() { _ = f.Close() }, pathOrContent, nil
-	}
-	// If pathOrContent contains no newlines and looks like an absolute path or path traversal targeting system files,
-	// reject it to avoid unintended file probing or confused string fallback.
-	if !strings.Contains(pathOrContent, "\n") && (filepath.IsAbs(pathOrContent) || strings.HasPrefix(pathOrContent, "..")) {
-		return nil, nil, "", fmt.Errorf("access to file path %q is not allowed: %w", pathOrContent, os.ErrPermission)
-	}
-	return strings.NewReader(pathOrContent), func() {}, defaultLabel, nil
-}
-
-func isAllowedManifestFile(path string) bool {
-	if strings.Contains(path, "\n") {
-		return false
-	}
-	clean := filepath.Clean(path)
-	// Check against sensitive path components
-	parts := strings.Split(filepath.ToSlash(clean), "/")
-	for _, p := range parts {
-		switch strings.ToLower(p) {
-		case ".ssh", ".aws", ".kube", ".gnupg", ".git", ".env", "etc", "proc", "sys", "dev":
-			return false
-		}
-	}
-	// Restrict to allowed manifest extensions
-	ext := strings.ToLower(filepath.Ext(clean))
-	switch ext {
-	case ".yaml", ".yml", ".json":
-		// allowed manifest extensions
-	default:
-		return false
-	}
-
-	info, err := os.Stat(clean)
-	if err != nil || info.IsDir() {
-		return false
-	}
-	return true
 }
 
