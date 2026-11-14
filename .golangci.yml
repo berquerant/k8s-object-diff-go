@@ -14,9 +14,13 @@ linters:
     paths:
       - ".*generated.*"
       - ".*/tmp/.*"
+    rules:
+      - path: ".*_test\\.go"
+        linters:
+          - errcheck
 
 run:
   concurrency: 4
   timeout: 3m
   allow-parallel-runners: true
-  tests: false
+  tests: true

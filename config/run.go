@@ -166,7 +166,6 @@ const (
 
 type objectLoader struct {
 	marshaler            internal.Marshaler
-	stdin                io.Reader
 	sep                  string
 	allowDuplicateMapKey bool
 	lineFilter           *internal.LineFilter
@@ -176,7 +175,6 @@ type objectLoader struct {
 func newObjectLoader(c *Config, lineFilter *internal.LineFilter, yqFilters []*internal.YqFilter) *objectLoader {
 	return &objectLoader{
 		marshaler:            internal.NewYamlMarshaler(c.Indent, true),
-		stdin:                c.Stdin,
 		sep:                  c.Separator,
 		allowDuplicateMapKey: c.AllowDuplicateKey,
 		lineFilter:           lineFilter,

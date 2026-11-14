@@ -10,7 +10,7 @@ import (
 )
 
 func LoadObjects(ctx context.Context, r io.Reader, marshaler Marshaler, allowDuplicateMapKey bool) ([]*Object, error) {
-	m := NewYamlUnmarshaler(r, map[string]any{}, allowDuplicateMapKey)
+	m := NewYamlUnmarshaler[map[string]any](r, allowDuplicateMapKey)
 	xs, err := m.Unmarshal(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load objects: %w", err)

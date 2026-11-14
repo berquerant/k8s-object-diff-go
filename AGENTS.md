@@ -155,7 +155,7 @@ flowchart TD
 - [mode.go](config/mode.go): Implements `diffPrinter`, formatting diff results for each supported output mode (text, YAML, markdown, ID summaries) and executing custom Go templates with Sprig functions.
 
 #### 3. `internal`
-- [object.go](internal/object.go): Defines `Header` (`APIVersion`, `Kind`, `Namespace`, `Name`), `Object`, and the logic to generate an Object ID string.
+- [object.go](internal/object.go): Defines `ObjectHeader` (`APIVersion`, `Kind`) and `ObjectMeta` (`Namespace`, `Name`), `Object`, and the logic to generate an Object ID string.
 - [load.go](internal/load.go): Scans multi-document YAML inputs into raw Go maps/structures and converts them into typed Kubernetes `Object` instances.
 - [yaml.go](internal/yaml.go): Handles YAML encoding, decoding, and normalization using `goccy/go-yaml`.
 - [pair.go](internal/pair.go): Manages `ObjectPair` and `ObjectPairMap`, linking left and right objects by ID and identifying diff types (`add`, `change`, `destroy`).
@@ -163,7 +163,6 @@ flowchart TD
 - [diffmatchpatch.go](internal/diffmatchpatch.go): Implements `DMPDiffer` wrapping `github.com/sergi/go-diff/diffmatchpatch`.
 - [filter.go](internal/filter.go): Provides regex-based line filtering (`LineFilter`) ignoring matching lines.
 - [yq_filter.go](internal/yq_filter.go): Evaluates YAML transformation expressions using `mikefarah/yq/v4` (`YqFilter`) to ignore fields, labels, and annotations.
-- [command.go](internal/command.go): Provides command string escaping utilities for executing external diff tools safely via `al.essio.dev/pkg/shellescape`.
 - [color.go](internal/color.go), [map.go](internal/map.go), [string.go](internal/string.go): Auxiliary utilities for ANSI terminal color styling, map processing, and string handling.
 
 #### 4. `version`
@@ -181,7 +180,6 @@ Primary dependencies declared in `go.mod`:
 - **`github.com/berquerant/structconfig`**: Struct-based configuration binding and environment variable resolution.
 - **`github.com/mikefarah/yq/v4`**: Expression-based YAML filtering for ignoring fields, labels, and annotations.
 - **`github.com/modelcontextprotocol/go-sdk`**: MCP server implementation exposing tools over stdio.
-- **`al.essio.dev/pkg/shellescape`**: Safe shell argument escaping when invoking external diff commands.
 - **`github.com/stretchr/testify`**: Testing framework assertions (`assert`, `require`).
 
 ---
