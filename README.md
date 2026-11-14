@@ -174,29 +174,29 @@ e.g. --ignore-matching-lines -> OBJDIFF_IGNORE_MATCHING_LINES
 ## Flags
 
 ```
-      --allow-duplicate-key                 allow the use of keys with the same name in the same map (default true)
-  -c, --color                               colored diff
-  -C, --context int                         diff context (default 3)
-      --debug                               enable debug log
-  -x, --diff-cmd string                     invoke this to get diff instead of builtin differ
-  -a, --ignore-annotation stringArray       ignore annotation by key (may be separated by ';' or specified multiple times)
-  -f, --ignore-field stringArray            ignore field by path or yq expression (may be separated by ';' or specified multiple times)
-  -l, --ignore-label stringArray            ignore label by key (may be separated by ';' or specified multiple times)
-  -m, --ignore-managed-fields               ignore metadata.managedFields
-  -i, --ignore-matching-lines stringArray   ignore lines matching regexp (may be separated by ';' or specified multiple times)
-  -s, --ignore-status                       ignore status field
-  -n, --indent int                          yaml indent (default 2)
-  -L, --label stringArray                   use label instead of file name (may be separated by ';' or specified multiple times)
-      --markdown-heading uint               highest heading level in markdown (default 1)
-      --markdown-title string               title in markdown summary; template variables: LEFT_FILE, RIGHT_FILE (default "Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}")
-      --mcp                                 start MCP server over stdio
-  -o, --out string                          output format: text,yaml,id,idlist,markdown,template (default "text")
-  -q, --quiet                               quiet log
-  -d, --separator string                    object id separator (default ">")
-      --success                             exit with 0 even if inputs differ
-  -T, --template string                     template string or file (prefix with '@') for template output mode
-  -v, --verbose                             enable verbose output; annotate diff type and display summary
-      --version                             print objdiff version
+      --allow-duplicate-key[=true|false]     allow the use of keys with the same name in the same map (default true)
+  -c, --color[=true|false]                   colored diff
+  -C, --context int                          diff context (default 3)
+      --debug[=true|false]                   enable debug log
+  -x, --diff-cmd string                      invoke this to get diff instead of builtin differ
+  -a, --ignore-annotation stringArray        ignore annotation by key (may be separated by ';' or specified multiple times)
+  -f, --ignore-field stringArray             ignore field by path or yq expression (may be separated by ';' or specified multiple times)
+  -l, --ignore-label stringArray             ignore label by key (may be separated by ';' or specified multiple times)
+  -m, --ignore-managed-fields[=true|false]   ignore metadata.managedFields
+  -i, --ignore-matching-lines stringArray    ignore lines matching regexp (may be separated by ';' or specified multiple times)
+  -s, --ignore-status[=true|false]           ignore status field
+  -n, --indent int                           yaml indent (default 2)
+  -L, --label stringArray                    use label instead of file name (may be separated by ';' or specified multiple times)
+      --markdown-heading uint                highest heading level in markdown (default 1)
+      --markdown-title string                title in markdown summary; template variables: LEFT_FILE, RIGHT_FILE (default "Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}")
+      --mcp[=true|false]                     start MCP server over stdio
+  -o, --out string                           output format: text,yaml,id,idlist,markdown,template (default "text")
+  -q, --quiet[=true|false]                   quiet log
+  -d, --separator string                     object id separator (default ">")
+      --success[=true|false]                 exit with 0 even if inputs differ
+  -T, --template string                      template string or file (prefix with '@') for template output mode
+  -v, --verbose[=true|false]                 enable verbose output; annotate diff type and display summary
+      --version[=true|false]                 print objdiff version
 ```
 
 ## Example
