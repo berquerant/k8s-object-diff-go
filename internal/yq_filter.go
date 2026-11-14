@@ -123,8 +123,9 @@ func (f *YqFilter) FilterBody(body string) (string, error) {
 	if f == nil || f.expression == "" || strings.TrimSpace(body) == "" {
 		return body, nil
 	}
-	encoder := yqlib.NewYamlEncoder(yqlib.ConfiguredYamlPreferences)
-	decoder := yqlib.NewYamlDecoder(yqlib.ConfiguredYamlPreferences)
+	prefs := yqlib.ConfiguredYamlPreferences.Copy()
+	encoder := yqlib.NewYamlEncoder(prefs)
+	decoder := yqlib.NewYamlDecoder(prefs)
 
 	res, err := f.evaluator.EvaluateAll(f.expression, body, encoder, decoder)
 	if err != nil {

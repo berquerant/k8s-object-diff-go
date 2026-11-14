@@ -166,13 +166,7 @@ data:
 				"left":  "../tests/diffs/left.yml",
 				"right": "../tests/diffs/right.yml",
 			},
-			wantError: false,
-			checkDiff: func(t *testing.T, res *mcp.CallToolResult) {
-				toolResult, err := parseResult(res)
-				require.NoError(t, err)
-				assert.False(t, toolResult.HasDiff)
-				assert.Empty(t, toolResult.Diff)
-			},
+			wantError: true,
 		},
 		{
 			name: "security: reject template file reference in MCP",

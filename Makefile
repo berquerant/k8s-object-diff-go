@@ -75,6 +75,10 @@ check-licenses-diff: $(THIRD_PARTY_LICENSES)
 check-licenses: check-licenses-diff
 	./bin/license.sh check
 
+.PHONY: check-actions-lock
+check-actions-lock:
+	gh actions-lock --verify
+
 # .PHONY: generate
 # generate:
 # 	go generate ./...

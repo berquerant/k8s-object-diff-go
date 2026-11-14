@@ -106,8 +106,7 @@ func (y *YamlUnmarshaler[T]) Unmarshal(ctx context.Context) ([]T, error) {
 		decoder := yaml.NewDecoder(strings.NewReader(d.String()), decoderOpts...)
 		err := decoder.DecodeFromNode(d.Body, t)
 		if err != nil {
-			slog.Debug("failed to load document", slog.Int("index", i), slog.Any("err", err))
-			continue
+			return nil, fmt.Errorf("unmarshal decode document index %d: %w", i, err)
 		}
 		result = append(result, *t)
 	}
