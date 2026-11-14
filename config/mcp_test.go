@@ -3,7 +3,6 @@ package config_test
 import (
 	"context"
 	"encoding/json"
-	"path/filepath"
 	"testing"
 
 	"github.com/berquerant/k8s-object-diff-go/config"
@@ -109,28 +108,28 @@ data:
 			wantDiff: false,
 		},
 		{
-			name: "call tool with file paths",
+			name: "call tool with markdown output",
 			args: map[string]any{
-				"left":  filepath.Join("..", "tests", "diffs", "left.yml"),
-				"right": filepath.Join("..", "tests", "diffs", "right.yml"),
+				"left":  manifestLeft,
+				"right": manifestRight,
 				"out":   "markdown",
 			},
 			wantDiff: true,
 			wantContains: []string{
-				"Objdiff Summary",
+				"Objdiff Summary: left <-> right",
 			},
 		},
 		{
 			name: "call tool with custom markdown title",
 			args: map[string]any{
-				"left":          filepath.Join("..", "tests", "diffs", "left.yml"),
-				"right":         filepath.Join("..", "tests", "diffs", "right.yml"),
+				"left":          manifestLeft,
+				"right":         manifestRight,
 				"out":           "markdown",
 				"markdownTitle": "Custom Title: {{ .LEFT_FILE }} <=> {{ .RIGHT_FILE }}",
 			},
 			wantDiff: true,
 			wantContains: []string{
-				"Custom Title: " + filepath.Join("..", "tests", "diffs", "left.yml") + " <=> " + filepath.Join("..", "tests", "diffs", "right.yml"),
+				"Custom Title: left <=> right",
 			},
 		},
 	} {
@@ -162,12 +161,18 @@ data:
 		checkDiff func(t *testing.T, res *mcp.CallToolResult)
 	}{
 		{
-			name: "security: reject unauthorized file path in MCP left/right",
+			name: "security: file path is not opened from filesystem",
 			args: map[string]any{
-				"left":  "/etc/passwd",
-				"right": manifestRight,
+				"left":  "../tests/diffs/left.yml",
+				"right": "../tests/diffs/right.yml",
 			},
-			wantError: true,
+			wantError: false,
+			checkDiff: func(t *testing.T, res *mcp.CallToolResult) {
+				toolResult, err := parseResult(res)
+				require.NoError(t, err)
+				assert.False(t, toolResult.HasDiff)
+				assert.Empty(t, toolResult.Diff)
+			},
 		},
 		{
 			name: "security: reject template file reference in MCP",
