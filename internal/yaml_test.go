@@ -73,6 +73,12 @@ s: "str"`,
 			wantErr:     true,
 			errContains: "exceeds maximum allowed size",
 		},
+		{
+			title:       "malformed document content returns decode error",
+			text:        "i: [not, an, int]\ns: \"str\"",
+			wantErr:     true,
+			errContains: "unmarshal decode document index 0",
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			r := tc.reader
