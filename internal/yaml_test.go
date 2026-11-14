@@ -86,7 +86,7 @@ s: "str"`,
 				r = strings.NewReader(tc.text)
 			}
 			allowDuplicateKey := !tc.disallowDuplicateKey
-			got, err := internal.NewYamlUnmarshaler(r, yamlTestWant{}, allowDuplicateKey).Unmarshal(context.TODO())
+			got, err := internal.NewYamlUnmarshaler[yamlTestWant](r, allowDuplicateKey).Unmarshal(context.TODO())
 			if tc.wantErr {
 				assert.Error(t, err)
 				if tc.errContains != "" {
@@ -190,9 +190,8 @@ s: "str2"`,
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			got, err := internal.NewYamlUnmarshaler(
+			got, err := internal.NewYamlUnmarshaler[yamlTestWant](
 				strings.NewReader(tc.text),
-				yamlTestWant{},
 				true,
 			).Unmarshal(context.TODO())
 			if !assert.Nil(t, err) {

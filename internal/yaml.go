@@ -52,14 +52,12 @@ func (y *YamlMarshaler) Marshal(ctx context.Context, v any) ([]byte, error) {
 
 type YamlUnmarshaler[T any] struct {
 	r                    io.Reader
-	t                    T
 	allowDuplicateMapKey bool
 }
 
-func NewYamlUnmarshaler[T any](r io.Reader, t T, allowDuplicateMapKey bool) *YamlUnmarshaler[T] {
+func NewYamlUnmarshaler[T any](r io.Reader, allowDuplicateMapKey bool) *YamlUnmarshaler[T] {
 	return &YamlUnmarshaler[T]{
 		r:                    r,
-		t:                    t,
 		allowDuplicateMapKey: allowDuplicateMapKey,
 	}
 }
