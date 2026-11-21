@@ -157,7 +157,9 @@ func (p *diffPrinter) printObjectIDList() error {
 	for i, x := range p.pairs {
 		xs[i] = x.ID
 	}
-	_, _ = fmt.Fprintln(p.out, strings.Join(xs, "\n"))
+	if _, err := fmt.Fprintln(p.out, strings.Join(xs, "\n")); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -206,7 +208,9 @@ func (p *diffPrinter) printObjectIDDiff(ctx context.Context) error {
 		slog.Debug("no diff")
 		return nil
 	}
-	_, _ = fmt.Fprint(p.out, d.Diff)
+	if _, err := fmt.Fprint(p.out, d.Diff); err != nil {
+		return err
+	}
 	return ErrDiffFound
 }
 
@@ -218,12 +222,18 @@ func (p *diffPrinter) printTextDiff(ctx context.Context) error {
 	stats := countDiffStats(diffs)
 	for _, d := range diffs {
 		if p.verbose {
-			_, _ = fmt.Fprintln(p.out, p.diffTypeString(d.Pair.ID, d.Type))
+			if _, err := fmt.Fprintln(p.out, p.diffTypeString(d.Pair.ID, d.Type)); err != nil {
+				return err
+			}
 		}
-		_, _ = fmt.Fprint(p.out, d.Diff)
+		if _, err := fmt.Fprint(p.out, d.Diff); err != nil {
+			return err
+		}
 	}
 	if p.verbose {
-		_, _ = fmt.Fprintf(p.out, "\n%s\n", p.diffTypeSummary(stats.Add, stats.Change, stats.Destroy))
+		if _, err := fmt.Fprintf(p.out, "\n%s\n", p.diffTypeSummary(stats.Add, stats.Change, stats.Destroy)); err != nil {
+			return err
+		}
 	}
 	if len(diffs) == 0 {
 		return nil
@@ -260,7 +270,9 @@ func (p *diffPrinter) printYamlDiff(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	_, _ = fmt.Fprint(p.out, string(b))
+	if _, err := fmt.Fprint(p.out, string(b)); err != nil {
+		return err
+	}
 	return ErrDiffFound
 }
 
@@ -411,7 +423,9 @@ func (p *diffPrinter) printMarkdownDiff(ctx context.Context) error {
 		return err
 	}
 	if len(diffs) == 0 {
-		_, _ = fmt.Fprintln(p.out, summaryNoDiff)
+		if _, err := fmt.Fprintln(p.out, summaryNoDiff); err != nil {
+			return err
+		}
 		return nil
 	}
 

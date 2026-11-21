@@ -1,1 +1,5 @@
 dist/
+.git-worktree/
+.env*
+.DS_Store
+*.out

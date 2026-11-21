@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"testing"
@@ -385,6 +386,47 @@ func TestConfigValidate(t *testing.T) {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.wantErr)
 			}
+		})
+	}
+}
+
+type failingWriter struct {
+	err error
+}
+
+func (w failingWriter) Write(_ []byte) (int, error) {
+	return 0, w.err
+}
+
+func TestDiffPrinterWriteError(t *testing.T) {
+	writeErr := errors.New("write failed")
+	pair := &internal.ObjectPair{
+		ID: "v1>Pod>default>nginx",
+		Left: &internal.Object{
+			Header: internal.ObjectHeader{
+				APIVersion: "v1",
+				Kind:       "Pod",
+				Metadata:   internal.ObjectMeta{Namespace: "default", Name: "nginx"},
+			},
+			Body: "apiVersion: v1\nkind: Pod\n",
+		},
+	}
+	differ := internal.NewDMPDiffer()
+	for _, mode := range []OutMode{OutModeIDList, OutModeID, OutModeText, OutModeYaml, OutModeMarkdown} {
+		t.Run(string(mode), func(t *testing.T) {
+			p := &diffPrinter{
+				mode:                 mode,
+				pairs:                []*internal.ObjectPair{pair},
+				differ:               differ,
+				objectDiffer:         internal.NewObjectDiffBuilder(differ, "left", "right", 3, false),
+				marshaler:            internal.NewYamlMarshaler(2, false),
+				left:                 "left",
+				right:                "right",
+				markdownHeadingLevel: 1,
+				out:                  failingWriter{err: writeErr},
+			}
+			err := p.print(context.Background())
+			assert.ErrorIs(t, err, writeErr)
 		})
 	}
 }

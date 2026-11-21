@@ -25,7 +25,7 @@ func (c *Config) Run(w io.Writer, left, right string) error {
 }
 
 func (c *Config) runObjDiff(ctx context.Context, w io.Writer, left, right string) error {
-	if left == right && left == stdinFilename {
+	if left == stdinFilename && right == stdinFilename {
 		return fmt.Errorf("'%s' cannot be specified for both left and right", stdinFilename)
 	}
 
@@ -50,7 +50,7 @@ func openFileOrStdin(file string, stdin io.Reader) (io.Reader, func(), error) {
 	case stdinFilename:
 		return stdin, func() {}, nil
 	default:
-		f, err := os.Open(file)
+		f, err := os.Open(file) //nolint:gosec // CLI intentionally opens user-specified manifest files
 		if err != nil {
 			return nil, nil, err
 		}

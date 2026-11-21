@@ -63,8 +63,9 @@ func main() {
 			context.Background(),
 			syscall.SIGINT, syscall.SIGTERM,
 		)
-		defer stop()
-		if err := c.RunMCP(ctx); err != nil {
+		err := c.RunMCP(ctx)
+		stop()
+		if err != nil {
 			slog.Error("mcp server error", slog.Any("err", err))
 			os.Exit(exitCodeFailure)
 		}

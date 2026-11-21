@@ -72,7 +72,7 @@ func (d *ProcessDiffer) Diff(ctx context.Context, req *DiffRequest) (*DiffRespon
 	}()
 
 	writeFile := func(name, content string) error {
-		f, err := os.Create(name)
+		f, err := os.Create(name) //nolint:gosec // writes inside private temp dir created by os.MkdirTemp
 		if err != nil {
 			return err
 		}
@@ -93,7 +93,7 @@ func (d *ProcessDiffer) Diff(ctx context.Context, req *DiffRequest) (*DiffRespon
 		return nil, fmt.Errorf("failed to get diff: write right file: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, d.command, d.generateArgs(req, leftFile, rightFile)...)
+	cmd := exec.CommandContext(ctx, d.command, d.generateArgs(req, leftFile, rightFile)...) //nolint:gosec // intentionally invokes user-configured diff command
 	var (
 		stdout bytes.Buffer
 		stderr bytes.Buffer
@@ -109,7 +109,8 @@ func (d *ProcessDiffer) Diff(ctx context.Context, req *DiffRequest) (*DiffRespon
 		}, nil
 	}
 
-	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
 		// inputs are different
 		return &DiffResponse{
 			Diff: stdout.String(),

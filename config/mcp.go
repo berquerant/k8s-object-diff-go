@@ -18,9 +18,9 @@ type DiffToolParams struct {
 	Out                  string   `json:"out,omitempty" jsonschema:"output format: text, yaml, id, idlist, markdown, template (default: text)"`
 	Context              *int     `json:"context,omitempty" jsonschema:"number of diff context lines (default: 3)"`
 	Separator            string   `json:"separator,omitempty" jsonschema:"object id separator (default: >)"`
-	Indent               *int     `json:"indent,omitempty" jsonschema:"yaml indent (default: 2)"`
+	Indent               *int     `json:"indent,omitempty" jsonschema:"yaml indent, 1-16 (default: 2)"`
 	Verbose              bool     `json:"verbose,omitempty" jsonschema:"enable verbose output; annotate diff type and display summary"`
-	MarkdownHeadingLevel *uint    `json:"markdownHeadingLevel,omitempty" jsonschema:"highest heading level in markdown (default: 1)"`
+	MarkdownHeadingLevel *uint    `json:"markdownHeadingLevel,omitempty" jsonschema:"highest heading level in markdown, 1-6 (default: 1)"`
 	MarkdownTitle        string   `json:"markdownTitle,omitempty" jsonschema:"title template in markdown format (default: 'Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}')"`
 	Template             string   `json:"template,omitempty" jsonschema:"template string for template output mode"`
 	IgnoreMatchingLines  []string `json:"ignoreMatchingLines,omitempty" jsonschema:"ignore lines matching regexp"`
