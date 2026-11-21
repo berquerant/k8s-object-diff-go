@@ -201,7 +201,6 @@ Primary dependencies declared in `go.mod`:
 | `make check-readme` | Checks that `README.md` is up to date without diff |
 | `make $(THIRD_PARTY_LICENSES)` / `NOTICE` | Generates third-party license notice report via `./bin/license.sh report` |
 | `make check-licenses` | Checks that `NOTICE` is up to date without diff |
-| `make vuln` | Checks vulnerabilities using `govulncheck` |
 | `make bench` | Runs benchmark tests in `config/` and reports stats |
 
 ### Running Tests

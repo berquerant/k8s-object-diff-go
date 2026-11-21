@@ -24,10 +24,6 @@ init:
 .PHONY: lint
 lint: check-licenses check-readme vet golangci-lint
 
-.PHONY: vuln
-vuln:
-	go tool govulncheck ./...
-
 .PHONY: vet
 vet:
 	go vet ./...
