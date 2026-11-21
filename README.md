@@ -53,7 +53,7 @@ type: "Diff type (add or change or destroy)"
 
 ### markdown
 
-```markdown
+````markdown
 # Objdiff Summary: Left file <-> Right file
 
 | **add** | **change** | **destroy** |
@@ -63,9 +63,12 @@ type: "Diff type (add or change or destroy)"
 <details>
 <summary><b>Diff type</b> <code>Object ID</code></summary>
 
+``` diff
 Unified diff
-</details>
 ```
+
+</details>
+````
 
 or
 
@@ -79,7 +82,7 @@ No changes.
 
 Formats diff output using a Go template string or file (`@file`, `@@` to escape leading `@`) specified via `--template` (`-T`).
 `--template` is required for template mode and cannot be used with other modes.
-Sprig template functions (https://masterminds.github.io/sprig/) are available.
+Hermetic Sprig template functions (https://masterminds.github.io/sprig/) are available (`env`, `expandenv`, and non-deterministic functions such as `now`/`uuidv4` are disabled for safety and reproducibility).
 
 #### Template Variables
 
@@ -129,7 +132,7 @@ No changes.
 ## Exit status
 
 0 if inputs are the same.
-1 if inputs differ.
+1 if inputs differ (0 if `--success` is specified).
 Otherwise 2.
 
 ## Filtering
@@ -148,9 +151,9 @@ objdiff supports filtering lines, fields, labels, and annotations:
 ```shell
 objdiff -x diff left.yml right.yml
 ```
-invokes
+invokes (per object; for `-o id`, only the file name/label is passed to `--label`)
 ```shell
-diff --unified=3 --color=never --label left.yml --label right.yml LEFT_FILE RIGHT_FILE
+diff --unified=3 --color=never --label 'left.yml <objectID>' --label 'right.yml <objectID>' LEFT_FILE RIGHT_FILE
 ```
 
 ```shell
@@ -158,8 +161,10 @@ OBJDIFF_DIFF_CMD='diff' objdiff -c -C 5 left.yml right.yml
 ```
 invokes
 ```shell
-diff --unified=5 --color=always --label left.yml --label right.yml LEFT_FILE RIGHT_FILE
+diff --unified=5 --color=always --label 'left.yml <objectID>' --label 'right.yml <objectID>' LEFT_FILE RIGHT_FILE
 ```
+
+Note: `--diff-cmd` / `OBJDIFF_DIFF_CMD` is split by whitespace; shell quoting is not supported.
 
 ## Configuration & Precedence
 
@@ -231,3 +236,18 @@ You can register `objdiff` as a Model Context Protocol (MCP) server for AI agent
   }
 }
 ```
+
+### Exposed Tool: `diff_k8s_manifests`
+
+Compares two Kubernetes manifests by Object ID and returns `{ "diff": string, "hasDiff": bool }`.
+
+Key parameters:
+- `left`, `right` (required): Inline Kubernetes manifest YAML strings (filesystem paths are not opened).
+- `out`: Output format (`text`, `yaml`, `id`, `idlist`, `markdown`, `template`).
+- `context`, `indent`, `separator`, `verbose`, `markdownHeadingLevel` (1-6), `markdownTitle`, `template`.
+- `ignoreMatchingLines`, `ignoreFields`, `ignoreLabels`, `ignoreAnnotations`, `ignoreManagedFields`, `ignoreStatus`.
+
+Security constraints in MCP mode:
+- `left` and `right` accept inline YAML content only (max 50MB per input).
+- Template file references (`@file`) are disabled; pass inline templates only.
+- `yq` filters run with environment, file, and system operations disabled and only allow safe `del(...)` path expressions.

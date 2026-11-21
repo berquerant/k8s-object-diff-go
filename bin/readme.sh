@@ -52,6 +52,21 @@ You can register \`objdiff\` as a Model Context Protocol (MCP) server for AI age
   }
 }
 \`\`\`
+
+### Exposed Tool: \`diff_k8s_manifests\`
+
+Compares two Kubernetes manifests by Object ID and returns \`{ "diff": string, "hasDiff": bool }\`.
+
+Key parameters:
+- \`left\`, \`right\` (required): Inline Kubernetes manifest YAML strings (filesystem paths are not opened).
+- \`out\`: Output format (\`text\`, \`yaml\`, \`id\`, \`idlist\`, \`markdown\`, \`template\`).
+- \`context\`, \`indent\`, \`separator\`, \`verbose\`, \`markdownHeadingLevel\` (1-6), \`markdownTitle\`, \`template\`.
+- \`ignoreMatchingLines\`, \`ignoreFields\`, \`ignoreLabels\`, \`ignoreAnnotations\`, \`ignoreManagedFields\`, \`ignoreStatus\`.
+
+Security constraints in MCP mode:
+- \`left\` and \`right\` accept inline YAML content only (max 50MB per input).
+- Template file references (\`@file\`) are disabled; pass inline templates only.
+- \`yq\` filters run with environment, file, and system operations disabled and only allow safe \`del(...)\` path expressions.
 README_EOF
 }
 
