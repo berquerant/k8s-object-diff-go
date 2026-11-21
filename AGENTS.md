@@ -201,6 +201,7 @@ Primary dependencies declared in `go.mod`:
 | `make check-readme` | Checks that `README.md` is up to date without diff |
 | `make $(THIRD_PARTY_LICENSES)` / `NOTICE` | Generates third-party license notice report via `./bin/license.sh report` |
 | `make check-licenses` | Checks that `NOTICE` is up to date without diff |
+| `make check-actions-lock` | Verifies `.github/workflows/actions.lock` via `gh actions-lock --verify` |
 | `make bench` | Runs benchmark tests in `config/` and reports stats |
 
 ### Running Tests
@@ -224,5 +225,5 @@ When working on this codebase:
 3. **Verify Lint & Tests**: Always run `make test` and `make lint` after making changes. Ensure zero lint warnings or test regressions.
 4. **Golden Files & Documentation**: If output formatting or CLI help is updated, update golden test files via `make golden` and regenerate `README.md` via `make README.md`.
 5. **License Integrity**: If new dependencies are added to `go.mod`, update the third-party licenses report via `make NOTICE` (or `./bin/license.sh report > NOTICE`) and verify with `make check-licenses`.
-6. **Golden Test Structure**: When adding new E2E test cases under `tests/<case-name>/`, provide `left.yml`, `right.yml`, optional `arg.txt` (newline-delimited flag arguments), and generate expected golden outputs (`.id`, `.idlist`, `.txt`, `.yml`, `.md`) using `make golden`.
+6. **Golden Test Structure**: When adding new E2E test cases under `tests/<case-name>/`, provide `left.yml`, `right.yml`, optional `arg.txt` (newline-delimited if multi-line, otherwise space-separated), optional `env.txt`, and optional `template.tmpl` (for `-T` / `--template` cases), then generate expected golden outputs (`.id`, `.idlist`, `.txt`, `.yml`, `.md`, or `.template`) using `make golden`.
 

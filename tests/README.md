@@ -13,7 +13,8 @@ make golden
 ## Add test
 
 1. add a new directory like `tests/new-test`
-2. add left and right yaml files
-3. (optional) add `arg.txt` for additional arguments of `objdiff`
-4. (optional) add `env.txt` for environment variables passed to `objdiff`
-5. `Update tests`
+2. add `left.yml` and `right.yml`
+3. (optional) add `arg.txt` for additional arguments of `objdiff` (newline-delimited when multi-line; space-separated on a single line)
+4. (optional) add `env.txt` for space-separated environment variables passed to `objdiff`
+5. (optional) add `template.tmpl` and reference it via `-T` / `--template` in `arg.txt` to generate `out.template`
+6. run `make golden` (`Update tests`)

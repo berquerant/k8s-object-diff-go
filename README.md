@@ -139,7 +139,7 @@ Otherwise 2.
 
 objdiff supports filtering lines, fields, labels, and annotations:
 - Line filter (`-i`, `--ignore-matching-lines`): ignores lines matching regular expressions.
-- Field filter (`-f`, `--ignore-field`): ignores fields by path (e.g. `status`, `metadata.managedFields`) or yq deletion expressions (e.g. `del(.status)`).
+- Field filter (`-f`, `--ignore-field`): ignores fields by path (e.g. `status`, `metadata.managedFields`) or single yq deletion expressions (e.g. `del(.status)`); only safe path deletion expressions are allowed, with yq env/file/system operations disabled.
 - Label filter (`-l`, `--ignore-label`): ignores labels across metadata and nested pod templates by key.
 - Annotation filter (`-a`, `--ignore-annotation`): ignores annotations across metadata and nested pod templates by key.
 - Shortcut flags:
@@ -215,6 +215,8 @@ objdiff left.yml right.yml
 yields the [result](./tests/diffs/out.txt).
 
 ## Installation
+
+Requires Go 1.27+ (or download a prebuilt binary from [GitHub Releases](https://github.com/berquerant/k8s-object-diff-go/releases)).
 
 ``` shell
 go install github.com/berquerant/k8s-object-diff-go/cmd/objdiff@latest
