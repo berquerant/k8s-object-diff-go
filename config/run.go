@@ -69,23 +69,46 @@ func (c *Config) resolveLabels(defaultLeft, defaultRight string) (string, string
 	}
 }
 
-func (c *Config) buildYqFilters() []*internal.YqFilter {
+func (c *Config) buildYqFilters() ([]*internal.YqFilter, error) {
 	var yqFilters []*internal.YqFilter
 	appendFilter := func(f *internal.YqFilter) {
-		if f != nil {
+		if f != nil && !f.IsEmpty() {
 			yqFilters = append(yqFilters, f)
 		}
 	}
-	appendFilter(internal.NewFieldFilter(c.IgnoreFields))
-	appendFilter(internal.NewLabelFilter(c.IgnoreLabels))
-	appendFilter(internal.NewAnnotationFilter(c.IgnoreAnnotations))
+	fieldFilter, err := internal.NewFieldFilter(c.IgnoreFields)
+	if err != nil {
+		return nil, fmt.Errorf("ignore-field: %w", err)
+	}
+	appendFilter(fieldFilter)
+
+	labelFilter, err := internal.NewLabelFilter(c.IgnoreLabels)
+	if err != nil {
+		return nil, fmt.Errorf("ignore-label: %w", err)
+	}
+	appendFilter(labelFilter)
+
+	annotationFilter, err := internal.NewAnnotationFilter(c.IgnoreAnnotations)
+	if err != nil {
+		return nil, fmt.Errorf("ignore-annotation: %w", err)
+	}
+	appendFilter(annotationFilter)
+
 	if c.IgnoreManagedFields {
-		appendFilter(internal.NewFieldFilter([]string{"metadata.managedFields"}))
+		f, err := internal.NewFieldFilter([]string{"metadata.managedFields"})
+		if err != nil {
+			return nil, fmt.Errorf("ignore-managed-fields: %w", err)
+		}
+		appendFilter(f)
 	}
 	if c.IgnoreStatus {
-		appendFilter(internal.NewFieldFilter([]string{"status"}))
+		f, err := internal.NewFieldFilter([]string{"status"})
+		if err != nil {
+			return nil, fmt.Errorf("ignore-status: %w", err)
+		}
+		appendFilter(f)
 	}
-	return yqFilters
+	return yqFilters, nil
 }
 
 func (c *Config) runWithReaders(ctx context.Context, w io.Writer, leftReader, rightReader io.Reader) error {
@@ -110,7 +133,12 @@ func (c *Config) runWithReadersAndLabels(ctx context.Context, w io.Writer, leftR
 		return fmt.Errorf("ignore-matching-lines: %w", err)
 	}
 
-	loader := newObjectLoader(c, lineFilter, c.buildYqFilters())
+	yqFilters, err := c.buildYqFilters()
+	if err != nil {
+		return err
+	}
+
+	loader := newObjectLoader(c, lineFilter, yqFilters)
 	leftMap, err := loader.loadFromReader(ctx, leftReader, left)
 	if err != nil {
 		return fmt.Errorf("left file: %s: %w", left, err)

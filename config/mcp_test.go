@@ -188,6 +188,33 @@ data:
 			},
 			wantError: true,
 		},
+		{
+			name: "security: reject yq injection via ignoreFields comma bypass",
+			args: map[string]any{
+				"left":         manifestLeft,
+				"right":        manifestRight,
+				"ignoreFields": []string{`del(.data), load_base64("/etc/passwd")`},
+			},
+			wantError: true,
+		},
+		{
+			name: "security: reject yq envsubst injection via ignoreFields",
+			args: map[string]any{
+				"left":         manifestLeft,
+				"right":        manifestRight,
+				"ignoreFields": []string{`data), envsubst`},
+			},
+			wantError: true,
+		},
+		{
+			name: "allow legitimate env label via ignoreLabels",
+			args: map[string]any{
+				"left":         manifestLeft,
+				"right":        manifestRight,
+				"ignoreLabels": []string{"env"},
+			},
+			wantError: false,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			res, err := clientSession.CallTool(ctx, &mcp.CallToolParams{
