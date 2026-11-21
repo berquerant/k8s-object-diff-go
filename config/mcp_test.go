@@ -215,6 +215,62 @@ data:
 			},
 			wantError: false,
 		},
+		{
+			name: "validation: reject negative context",
+			args: map[string]any{
+				"left":    manifestLeft,
+				"right":   manifestRight,
+				"context": -1,
+			},
+			wantError: true,
+		},
+		{
+			name: "validation: reject unknown out mode",
+			args: map[string]any{
+				"left":  manifestLeft,
+				"right": manifestRight,
+				"out":   "nonexistent",
+			},
+			wantError: true,
+		},
+		{
+			name: "validation: reject zero indent",
+			args: map[string]any{
+				"left":   manifestLeft,
+				"right":  manifestRight,
+				"indent": 0,
+			},
+			wantError: true,
+		},
+		{
+			name: "validation: reject excessive indent",
+			args: map[string]any{
+				"left":   manifestLeft,
+				"right":  manifestRight,
+				"indent": 100,
+			},
+			wantError: true,
+		},
+		{
+			name: "validation: reject zero markdownHeadingLevel",
+			args: map[string]any{
+				"left":                 manifestLeft,
+				"right":                manifestRight,
+				"out":                  "markdown",
+				"markdownHeadingLevel": 0,
+			},
+			wantError: true,
+		},
+		{
+			name: "validation: reject excessive markdownHeadingLevel",
+			args: map[string]any{
+				"left":                 manifestLeft,
+				"right":                manifestRight,
+				"out":                  "markdown",
+				"markdownHeadingLevel": 1000,
+			},
+			wantError: true,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			res, err := clientSession.CallTool(ctx, &mcp.CallToolParams{

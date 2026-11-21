@@ -1,11 +1,11 @@
 package internal
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"log/slog"
-	"strings"
 
 	"github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
@@ -65,6 +65,9 @@ func NewYamlUnmarshaler[T any](r io.Reader, allowDuplicateMapKey bool) *YamlUnma
 const maxManifestReadLimit = 50 * 1024 * 1024 // 50MB
 
 func (y *YamlUnmarshaler[T]) Unmarshal(ctx context.Context) ([]T, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("unmarshal canceled: %w", err)
+	}
 	limitedReader := io.LimitReader(y.r, maxManifestReadLimit+1)
 	b, err := io.ReadAll(limitedReader)
 	if err != nil {
@@ -91,6 +94,9 @@ func (y *YamlUnmarshaler[T]) Unmarshal(ctx context.Context) ([]T, error) {
 	}
 	result := []T{}
 	for i, d := range fileNode.Docs {
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("unmarshal canceled: %w", err)
+		}
 		if d.Body == nil {
 			slog.Debug("skip to load document due to empty", slog.Int("index", i))
 			continue
@@ -101,7 +107,7 @@ func (y *YamlUnmarshaler[T]) Unmarshal(ctx context.Context) ([]T, error) {
 			continue
 		}
 		t := new(T)
-		decoder := yaml.NewDecoder(strings.NewReader(d.String()), decoderOpts...)
+		decoder := yaml.NewDecoder(bytes.NewReader(nil), decoderOpts...)
 		err := decoder.DecodeFromNode(d.Body, t)
 		if err != nil {
 			return nil, fmt.Errorf("unmarshal decode document index %d: %w", i, err)

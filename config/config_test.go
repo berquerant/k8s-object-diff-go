@@ -315,3 +315,77 @@ func TestDiffPrinterModes(t *testing.T) {
 	}
 }
 
+func TestConfigValidate(t *testing.T) {
+	for _, tc := range []struct {
+		title   string
+		cfg     Config
+		wantErr string
+	}{
+		{
+			title: "zero value config is valid",
+			cfg:   Config{},
+		},
+		{
+			title: "valid full config",
+			cfg: Config{
+				Context:              3,
+				Out:                  string(OutModeMarkdown),
+				Indent:               2,
+				MarkdownHeadingLevel: 6,
+			},
+		},
+		{
+			title: "valid template config",
+			cfg: Config{
+				Out:      string(OutModeTemplate),
+				Template: "{{ .Left }}",
+			},
+		},
+		{
+			title:   "negative context",
+			cfg:     Config{Context: -1},
+			wantErr: "invalid context length",
+		},
+		{
+			title:   "unknown out mode",
+			cfg:     Config{Out: "invalid"},
+			wantErr: "invalid out",
+		},
+		{
+			title:   "negative indent",
+			cfg:     Config{Indent: -1},
+			wantErr: "invalid indent",
+		},
+		{
+			title:   "indent exceeds max",
+			cfg:     Config{Indent: MaxIndent + 1},
+			wantErr: "invalid indent",
+		},
+		{
+			title:   "markdown heading exceeds max",
+			cfg:     Config{MarkdownHeadingLevel: MaxMarkdownHeadingLevel + 1},
+			wantErr: "invalid markdown heading level",
+		},
+		{
+			title:   "template mode without template",
+			cfg:     Config{Out: string(OutModeTemplate)},
+			wantErr: "--template is required",
+		},
+		{
+			title:   "non-template mode with template",
+			cfg:     Config{Out: string(OutModeText), Template: "{{ .Left }}"},
+			wantErr: "--template is only allowed",
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			err := tc.cfg.Validate()
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+			}
+		})
+	}
+}
+

@@ -53,8 +53,8 @@ func main() {
 		version.Write(os.Stdout)
 		return
 	}
-	if c.Context < 0 {
-		slog.Error("invalid context length")
+	if err := c.Validate(); err != nil {
+		slog.Error("invalid config", slog.Any("err", err))
 		os.Exit(exitCodeFailure)
 	}
 

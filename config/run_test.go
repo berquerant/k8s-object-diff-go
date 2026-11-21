@@ -240,6 +240,12 @@ data:
 			markdownTitle: "{{ .INVALID",
 			errContains:   "failed to parse markdown title template",
 		},
+		{
+			title:     "label containing template syntax is not double-evaluated",
+			labels:    []string{"{{ .Add }}", "{{ broken"},
+			wantTitle: "# Objdiff Summary: {{ .Add }} <-> {{ broken",
+			wantErrIs: config.ErrDiffFound,
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			var c config.Config

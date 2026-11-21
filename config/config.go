@@ -68,6 +68,40 @@ func (c *Config) OutMode() OutMode {
 	}
 }
 
+const (
+	// MaxIndent is the maximum allowed YAML indentation width.
+	MaxIndent = 16
+	// MaxMarkdownHeadingLevel is the maximum allowed Markdown heading level (H1-H6).
+	MaxMarkdownHeadingLevel uint = 6
+)
+
+// Validate checks configuration invariants shared across CLI and MCP execution paths.
+func (c *Config) Validate() error {
+	if c.Context < 0 {
+		return fmt.Errorf("invalid context length: %d (must be >= 0)", c.Context)
+	}
+	if c.Out != "" && c.OutMode() == OutModeUnknown {
+		return fmt.Errorf("invalid out: %q", c.Out)
+	}
+	if c.Indent < 0 || c.Indent > MaxIndent {
+		return fmt.Errorf("invalid indent: %d (must be between 0 and %d)", c.Indent, MaxIndent)
+	}
+	if c.MarkdownHeadingLevel > MaxMarkdownHeadingLevel {
+		return fmt.Errorf("invalid markdown heading level: %d (must be between 1 and %d)", c.MarkdownHeadingLevel, MaxMarkdownHeadingLevel)
+	}
+	switch c.OutMode() {
+	case OutModeTemplate:
+		if c.Template == "" {
+			return errors.New("--template is required for template mode")
+		}
+	default:
+		if c.Template != "" {
+			return errors.New("--template is only allowed with template mode")
+		}
+	}
+	return nil
+}
+
 // Clone returns a deep copy of the Config with independent slices.
 // Note: Stdin (io.Reader) is shallow-copied because stream readers maintain internal state.
 // In MCP server mode, Stdin is not consumed because inputs are passed as in-memory YAML strings.

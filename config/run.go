@@ -117,15 +117,8 @@ func (c *Config) runWithReaders(ctx context.Context, w io.Writer, leftReader, ri
 }
 
 func (c *Config) runWithReadersAndLabels(ctx context.Context, w io.Writer, leftReader, rightReader io.Reader, left, right string) error {
-	switch c.OutMode() {
-	case OutModeTemplate:
-		if c.Template == "" {
-			return errors.New("--template is required for template mode")
-		}
-	default:
-		if c.Template != "" {
-			return errors.New("--template is only allowed with template mode")
-		}
+	if err := c.Validate(); err != nil {
+		return err
 	}
 
 	lineFilter, err := internal.NewLineFilter(c.IgnoreMatchingLines)

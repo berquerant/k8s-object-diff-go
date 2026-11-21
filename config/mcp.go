@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/berquerant/k8s-object-diff-go/version"
@@ -74,7 +75,9 @@ func (c *Config) runDiffTool(ctx context.Context, params DiffToolParams) (DiffTo
 	cfg := c.Clone()
 	cfg.MCP = true
 
-	cfg.applyOverrides(params)
+	if err := cfg.applyOverrides(params); err != nil {
+		return DiffToolResult{}, err
+	}
 
 	if len(cfg.Labels) == 0 {
 		cfg.Labels = []string{"left", "right"}
@@ -97,7 +100,7 @@ func (c *Config) runDiffTool(ctx context.Context, params DiffToolParams) (DiffTo
 	}, nil
 }
 
-func (cfg *Config) applyOverrides(params DiffToolParams) {
+func (cfg *Config) applyOverrides(params DiffToolParams) error {
 	if cfg.Separator == "" {
 		cfg.Separator = ">"
 	}
@@ -116,12 +119,18 @@ func (cfg *Config) applyOverrides(params DiffToolParams) {
 		cfg.Separator = params.Separator
 	}
 	if params.Indent != nil {
+		if *params.Indent < 1 {
+			return fmt.Errorf("invalid indent: %d (must be between 1 and %d)", *params.Indent, MaxIndent)
+		}
 		cfg.Indent = *params.Indent
 	}
 	if params.Verbose {
 		cfg.Verbose = true
 	}
 	if params.MarkdownHeadingLevel != nil {
+		if *params.MarkdownHeadingLevel == 0 {
+			return fmt.Errorf("invalid markdown heading level: 0 (must be between 1 and %d)", MaxMarkdownHeadingLevel)
+		}
 		cfg.MarkdownHeadingLevel = *params.MarkdownHeadingLevel
 	}
 	if params.MarkdownTitle != "" {
@@ -140,5 +149,6 @@ func (cfg *Config) applyOverrides(params DiffToolParams) {
 	if params.IgnoreStatus {
 		cfg.IgnoreStatus = true
 	}
+	return cfg.Validate()
 }
 

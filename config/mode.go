@@ -370,28 +370,13 @@ func (p *diffPrinter) printMarkdownDiff(ctx context.Context) error {
 		return err
 	}
 
-	var (
-		heading = func(n int) string {
-			return strings.Repeat("#", n+int(p.markdownHeadingLevel))
-		}
-		summaryNoDiff = fmt.Sprintf(`%s %s
+	const (
+		summaryTmpl = `{{ .Heading }} {{ .Title }}
 
-No changes.`,
-			heading(0),
-			title,
-		)
-		summaryTmpl = fmt.Sprintf(`%s %s
-
-| **%s** | **%s** | **%s** |
+| **{{ .AddLabel }}** | **{{ .ChangeLabel }}** | **{{ .DestroyLabel }}** |
 | :---: | :---: | :---: |
 | {{ .Add }} | {{ .Change }} | {{ .Destroy }} |
-`,
-			heading(0),
-			title,
-			internal.DiffTypeAdd,
-			internal.DiffTypeChange,
-			internal.DiffTypeDestroy,
-		)
+`
 		diffTmpl = `{{ range . }}
 <details>
 <summary><b>{{ .DiffType }}</b> <code>{{ .ID }}</code></summary>
@@ -402,6 +387,20 @@ No changes.`,
 </details>
 {{ end }}`
 	)
+
+	heading := strings.Repeat("#", int(p.markdownHeadingLevel))
+	summaryNoDiff := fmt.Sprintf("%s %s\n\nNo changes.", heading, title)
+
+	type summaryData struct {
+		Heading      string
+		Title        string
+		AddLabel     string
+		ChangeLabel  string
+		DestroyLabel string
+		Add          int
+		Change       int
+		Destroy      int
+	}
 
 	type Item struct {
 		ID, Diff, DiffType, Fence string
@@ -431,7 +430,16 @@ No changes.`,
 	if err != nil {
 		return fmt.Errorf("failed to parse markdown summary template: %w", err)
 	}
-	if err := summaryTemplate.Execute(p.out, stats); err != nil {
+	if err := summaryTemplate.Execute(p.out, summaryData{
+		Heading:      heading,
+		Title:        title,
+		AddLabel:     internal.DiffTypeAdd.String(),
+		ChangeLabel:  internal.DiffTypeChange.String(),
+		DestroyLabel: internal.DiffTypeDestroy.String(),
+		Add:          stats.Add,
+		Change:       stats.Change,
+		Destroy:      stats.Destroy,
+	}); err != nil {
 		return fmt.Errorf("failed to execute markdown summary template: %w", err)
 	}
 
