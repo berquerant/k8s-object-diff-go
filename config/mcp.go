@@ -42,7 +42,7 @@ func (c *Config) NewMCPServer() *mcp.Server {
 	s := mcp.NewServer(
 		&mcp.Implementation{
 			Name:    "objdiff",
-			Version: version.Version,
+			Version: version.GetVersion(),
 		},
 		nil,
 	)
