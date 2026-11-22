@@ -1,17 +1,25 @@
 #!/bin/bash
 
+set -euo pipefail
+
 short_sha() {
     git rev-parse --short HEAD
 }
 
 current_tag() {
-    git describe --tags --abbrev=0 --exact-match 2> /dev/null
+    git describe --tags --abbrev=0 --exact-match 2>/dev/null || true
 }
 
 readonly version_package="github.com/berquerant/k8s-object-diff-go/version"
 
 ldflags() {
-    echo "-X ${version_package}.Version=$(current_tag) -X ${version_package}.Revision=$(short_sha)"
+    local flags="-X ${version_package}.Revision=$(short_sha)"
+    local tag
+    tag="$(current_tag)"
+    if [ -n "${tag}" ]; then
+        flags="-X ${version_package}.Version=${tag} ${flags}"
+    fi
+    echo "${flags}"
 }
 
 build() {

@@ -1,6 +1,10 @@
 version: "2"
 
 linters:
+  enable:
+    - errorlint
+    - gocritic
+    - gosec
   settings:
     godox:
       keywords:
@@ -18,6 +22,7 @@ linters:
       - path: ".*_test\\.go"
         linters:
           - errcheck
+          - gosec
 
 run:
   concurrency: 4

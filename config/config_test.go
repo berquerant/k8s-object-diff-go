@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"testing"
@@ -311,6 +312,121 @@ func TestDiffPrinterModes(t *testing.T) {
 			for _, s := range tc.wantContains {
 				assert.Contains(t, buf.String(), s)
 			}
+		})
+	}
+}
+
+func TestConfigValidate(t *testing.T) {
+	for _, tc := range []struct {
+		title   string
+		cfg     Config
+		wantErr string
+	}{
+		{
+			title: "zero value config is valid",
+			cfg:   Config{},
+		},
+		{
+			title: "valid full config",
+			cfg: Config{
+				Context:              3,
+				Out:                  string(OutModeMarkdown),
+				Indent:               2,
+				MarkdownHeadingLevel: 6,
+			},
+		},
+		{
+			title: "valid template config",
+			cfg: Config{
+				Out:      string(OutModeTemplate),
+				Template: "{{ .Left }}",
+			},
+		},
+		{
+			title:   "negative context",
+			cfg:     Config{Context: -1},
+			wantErr: "invalid context length",
+		},
+		{
+			title:   "unknown out mode",
+			cfg:     Config{Out: "invalid"},
+			wantErr: "invalid out",
+		},
+		{
+			title:   "negative indent",
+			cfg:     Config{Indent: -1},
+			wantErr: "invalid indent",
+		},
+		{
+			title:   "indent exceeds max",
+			cfg:     Config{Indent: MaxIndent + 1},
+			wantErr: "invalid indent",
+		},
+		{
+			title:   "markdown heading exceeds max",
+			cfg:     Config{MarkdownHeadingLevel: MaxMarkdownHeadingLevel + 1},
+			wantErr: "invalid markdown heading level",
+		},
+		{
+			title:   "template mode without template",
+			cfg:     Config{Out: string(OutModeTemplate)},
+			wantErr: "--template is required",
+		},
+		{
+			title:   "non-template mode with template",
+			cfg:     Config{Out: string(OutModeText), Template: "{{ .Left }}"},
+			wantErr: "--template is only allowed",
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			err := tc.cfg.Validate()
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+			}
+		})
+	}
+}
+
+type failingWriter struct {
+	err error
+}
+
+func (w failingWriter) Write(_ []byte) (int, error) {
+	return 0, w.err
+}
+
+func TestDiffPrinterWriteError(t *testing.T) {
+	writeErr := errors.New("write failed")
+	pair := &internal.ObjectPair{
+		ID: "v1>Pod>default>nginx",
+		Left: &internal.Object{
+			Header: internal.ObjectHeader{
+				APIVersion: "v1",
+				Kind:       "Pod",
+				Metadata:   internal.ObjectMeta{Namespace: "default", Name: "nginx"},
+			},
+			Body: "apiVersion: v1\nkind: Pod\n",
+		},
+	}
+	differ := internal.NewDMPDiffer()
+	for _, mode := range []OutMode{OutModeIDList, OutModeID, OutModeText, OutModeYaml, OutModeMarkdown} {
+		t.Run(string(mode), func(t *testing.T) {
+			p := &diffPrinter{
+				mode:                 mode,
+				pairs:                []*internal.ObjectPair{pair},
+				differ:               differ,
+				objectDiffer:         internal.NewObjectDiffBuilder(differ, "left", "right", 3, false),
+				marshaler:            internal.NewYamlMarshaler(2, false),
+				left:                 "left",
+				right:                "right",
+				markdownHeadingLevel: 1,
+				out:                  failingWriter{err: writeErr},
+			}
+			err := p.print(context.Background())
+			assert.ErrorIs(t, err, writeErr)
 		})
 	}
 }

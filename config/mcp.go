@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/berquerant/k8s-object-diff-go/version"
@@ -17,9 +18,9 @@ type DiffToolParams struct {
 	Out                  string   `json:"out,omitempty" jsonschema:"output format: text, yaml, id, idlist, markdown, template (default: text)"`
 	Context              *int     `json:"context,omitempty" jsonschema:"number of diff context lines (default: 3)"`
 	Separator            string   `json:"separator,omitempty" jsonschema:"object id separator (default: >)"`
-	Indent               *int     `json:"indent,omitempty" jsonschema:"yaml indent (default: 2)"`
+	Indent               *int     `json:"indent,omitempty" jsonschema:"yaml indent, 1-16 (default: 2)"`
 	Verbose              bool     `json:"verbose,omitempty" jsonschema:"enable verbose output; annotate diff type and display summary"`
-	MarkdownHeadingLevel *uint    `json:"markdownHeadingLevel,omitempty" jsonschema:"highest heading level in markdown (default: 1)"`
+	MarkdownHeadingLevel *uint    `json:"markdownHeadingLevel,omitempty" jsonschema:"highest heading level in markdown, 1-6 (default: 1)"`
 	MarkdownTitle        string   `json:"markdownTitle,omitempty" jsonschema:"title template in markdown format (default: 'Objdiff Summary: {{ .LEFT_FILE }} <-> {{ .RIGHT_FILE }}')"`
 	Template             string   `json:"template,omitempty" jsonschema:"template string for template output mode"`
 	IgnoreMatchingLines  []string `json:"ignoreMatchingLines,omitempty" jsonschema:"ignore lines matching regexp"`
@@ -74,7 +75,9 @@ func (c *Config) runDiffTool(ctx context.Context, params DiffToolParams) (DiffTo
 	cfg := c.Clone()
 	cfg.MCP = true
 
-	cfg.applyOverrides(params)
+	if err := cfg.applyOverrides(params); err != nil {
+		return DiffToolResult{}, err
+	}
 
 	if len(cfg.Labels) == 0 {
 		cfg.Labels = []string{"left", "right"}
@@ -97,7 +100,7 @@ func (c *Config) runDiffTool(ctx context.Context, params DiffToolParams) (DiffTo
 	}, nil
 }
 
-func (cfg *Config) applyOverrides(params DiffToolParams) {
+func (cfg *Config) applyOverrides(params DiffToolParams) error {
 	if cfg.Separator == "" {
 		cfg.Separator = ">"
 	}
@@ -116,12 +119,18 @@ func (cfg *Config) applyOverrides(params DiffToolParams) {
 		cfg.Separator = params.Separator
 	}
 	if params.Indent != nil {
+		if *params.Indent < 1 {
+			return fmt.Errorf("invalid indent: %d (must be between 1 and %d)", *params.Indent, MaxIndent)
+		}
 		cfg.Indent = *params.Indent
 	}
 	if params.Verbose {
 		cfg.Verbose = true
 	}
 	if params.MarkdownHeadingLevel != nil {
+		if *params.MarkdownHeadingLevel == 0 {
+			return fmt.Errorf("invalid markdown heading level: 0 (must be between 1 and %d)", MaxMarkdownHeadingLevel)
+		}
 		cfg.MarkdownHeadingLevel = *params.MarkdownHeadingLevel
 	}
 	if params.MarkdownTitle != "" {
@@ -140,5 +149,6 @@ func (cfg *Config) applyOverrides(params DiffToolParams) {
 	if params.IgnoreStatus {
 		cfg.IgnoreStatus = true
 	}
+	return cfg.Validate()
 }
 

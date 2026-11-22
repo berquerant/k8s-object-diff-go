@@ -266,3 +266,12 @@ k2: v2
 		})
 	}
 }
+
+func TestYamlUnmarshalerCanceledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	r := strings.NewReader("apiVersion: v1\nkind: ConfigMap\n")
+	_, err := internal.NewYamlUnmarshaler[map[string]any](r, true).Unmarshal(ctx)
+	assert.ErrorIs(t, err, context.Canceled)
+}

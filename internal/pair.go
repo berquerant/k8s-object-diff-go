@@ -1,6 +1,9 @@
 package internal
 
-import "sort"
+import (
+	"maps"
+	"slices"
+)
 
 // ObjectPair is a pair of [Objects] that share the same ID.
 type ObjectPair struct {
@@ -48,14 +51,7 @@ func (m *ObjectPairMap) sortedKeys() []string {
 	for _, x := range m.right.Keys() {
 		s[x] = true
 	}
-	ss := make([]string, len(s))
-	var i int
-	for k := range s {
-		ss[i] = k
-		i++
-	}
-	sort.Strings(ss)
-	return ss
+	return slices.Sorted(maps.Keys(s))
 }
 
 func (m *ObjectPairMap) getObjectPair(id string) *ObjectPair {

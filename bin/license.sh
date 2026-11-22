@@ -9,15 +9,15 @@ go_licenses() {
     go tool go-licenses "$@"
 }
 
-readonly ignore='--ignore "github.com/berquerant/k8s-object-diff-go/"'
+readonly -a ignore=(--ignore "github.com/berquerant/k8s-object-diff-go/")
 readonly target='./cmd/objdiff'
 
 report() {
-    go_licenses report "$target" $ignore --template="${d}/notice-template.md"
+    go_licenses report "$target" "${ignore[@]}" --template="${d}/notice-template.md"
 }
 
 check() {
-    go_licenses check "$target" $ignore
+    go_licenses check "$target" "${ignore[@]}"
 }
 
 readonly cmd="$1"
